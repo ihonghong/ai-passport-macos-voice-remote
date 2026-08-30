@@ -23,7 +23,7 @@
 | [development/agent-guide.zh_CN.md](./development/agent-guide.zh_CN.md) | 工程规范 | authoritative | AI 开发工作流（上下文建立、需求拆解、BSP 边界、验收交付格式） |
 | [development/CI-build-and-release.zh_CN.md](./development/CI-build-and-release.zh_CN.md) | CI 文档 | authoritative | 自动构建与发布说明（tag 触发自动编译固件并发布 Release） |
 | [development/CI-validation.zh_CN.md](./development/CI-validation.zh_CN.md) | CI 文档 | authoritative | PR/main 自动仓库检查、host tests 与固件验证 |
-| [development/CI-sync-main.zh_CN.md](./development/CI-sync-main.zh_CN.md) | CI 文档 | authoritative | 上游同步说明（定期同步上游 main 到 fork） |
+| [development/CI-sync-main.zh_CN.md](./development/CI-sync-main.zh_CN.md) | 维护文档 | authoritative | 手动审查与整合上游更新 |
 | [development/publish-to-community.zh_CN.md](./development/publish-to-community.zh_CN.md) | 工程规范 | authoritative | 发布到 AI Passport 社区市场 |
 | [development/project-completion.zh_CN.md](./development/project-completion.zh_CN.md) | 工程规范 | authoritative | 项目开发完成流程（可选收尾动作） |
 | [development/file-issues.zh_CN.md](./development/file-issues.zh_CN.md) | 工程规范 | authoritative | 把建议提交成上游 GitHub issue |
@@ -34,6 +34,9 @@
 | [hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md](./hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md) | 硬件指南 | authoritative | 完整硬件开发指南与排障参考（上游） |
 | [hardware-design/specifications.zh_CN.md](./hardware-design/specifications.zh_CN.md) | 产品规格 | authoritative | 产品规格（尺寸、重量、电池、充电、NFC、按键等对外口径） |
 | [../plays/INDEX.zh_CN.md](../plays/INDEX.zh_CN.md) | plays 应用档案索引 | 参考 | `plays/` 下已归档应用的发现表 |
+| [../host/macos/README.zh_CN.md](../host/macos/README.zh_CN.md) | macOS 主机端 | authoritative | 安装、配置与故障排查 |
+| [../host/macos/bridge/providers/README.zh_CN.md](../host/macos/bridge/providers/README.zh_CN.md) | 指标 Provider | authoritative | Provider 插件契约 |
+| [../main/plugins/pets/README.zh_CN.md](../main/plugins/pets/README.zh_CN.md) | 固件宠物 | authoritative | 宠物插件契约与素材授权边界 |
 
 ## GitHub 社区治理文档
 

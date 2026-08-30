@@ -6,6 +6,57 @@
 
 ## Unreleased
 
+- Renamed the public repository target to
+  `ai-passport-macos-voice-remote` and unified release installation guidance:
+  provisioned devices use permanent Recovery and the official mini-program,
+  development uses segmented flashing, and raw `0x0` USB writes are explicitly
+  treated as bond-resetting recovery operations.
+- Added connection-aware macOS input protection: Passport mode keeps BlackHole
+  only while the bridge is connected, temporarily restores the previous physical
+  microphone while waiting, stopped, or failed, resumes after reconnection, and
+  preserves an explicit meeting-mode choice.
+- Rebalanced the shortcut dashboard typography so operational state is the
+  primary visual signal, while time, battery, quota, and daily-token values
+  share a quieter secondary scale. READY and LISTENING now share one 20px
+  center anchor, so recording transitions change context without shifting the
+  status text.
+- Prepared the product repository for independent open-source release: changed
+  public defaults to generic labels with metrics and pets disabled, pinned Mac
+  dependencies, hardened installer deletion paths and BLE pairing logs, added a
+  macOS host CI job, and replaced automatic upstream synchronization with manual
+  review.
+- Fixed automatic Codex Provider detection in the minimal PATH used by macOS
+  LaunchAgents by resolving the supported `~/.local/bin/codex` fallback before
+  deciding to disable metrics.
+- Documented that each user must bind their chosen dictation or input method to
+  Left Control + Left Command, and removed the remaining Doubao-specific runtime
+  wording.
+- Added a direct-launch Mac voice-shortcut remote with time, battery, Codex
+  quota, daily-token progress, and an animated pet listening display;
+  BLE HID push-to-talk/Return/Command-Delete mappings; wireless 8 kHz microphone
+  transport over a vendor HID report; and a macOS BlackHole bridge with
+  automatic wireless reconnection plus USB fallback.
+- Moved the complete macOS bridge and status application into `host/macos`,
+  added reproducible install, uninstall, and diagnostic scripts, and documented
+  the clone-to-working flow for people and installation agents.
+- Extracted optional model metrics into host Provider plugins with bundled
+  `auto`, `codex`, and `none` choices, plus matching compile-time firmware label
+  profiles.
+- Added compile-time pet plugins and kept the owner's pet artwork as
+  an ignored local fallback because it has no confirmed redistribution license.
+- Reduced wireless idle power without changing shortcut semantics: enabled BLE
+  modem sleep and automatic dynamic frequency scaling, requested conservative
+  idle/streaming connection profiles with non-fatal fallback, backed disconnected
+  advertising off from 30-50 ms to 500-1000 ms after 30 seconds, restored fast
+  advertising on a physical press, and blocked the audio task instead of polling
+  every 10 ms while idle. Automatic Light-sleep remains disabled pending device
+  latency and display/audio validation.
+- Replaced the prototype's fixed BLE passkey with a fresh random six-digit code
+  for each new pairing attempt and added a temporary on-device pairing overlay
+  that clears after encryption or disconnection.
+- Added a wireless display deep-idle stage: after one minute without local
+  activity, the backlight drops from 15% to 5%, UI animation pauses, and battery
+  polling slows until a physical button or active use restores the display.
 - Made mini-program BLE install compatibility a template-level invariant: fixed
   protected `cardid`/Recovery partitions, retained the five-second UP-key
   Recovery boot hook, and added CI validation for merged-image structure,

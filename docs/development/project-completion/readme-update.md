@@ -12,7 +12,7 @@ The root README path is intentionally reserved for the fork owner. Upstream's
 project overview lives at `docs/README.md`; a fork may add its own root README to
 explain its product without replacing upstream documentation.
 
-The fork keeps `main` synced with upstream and puts product work on `feature/*`
+The product keeps release work on `main` and develops changes on `feature/*`
 branches, so root READMEs exist on multiple branches. Handle each branch's root
 README independently — the `main` README and a `feature/*` branch README are
 separate decisions.

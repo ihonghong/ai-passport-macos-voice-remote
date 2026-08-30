@@ -160,8 +160,8 @@ export IDF_COMPONENT_STORAGE_URL="https://components-file.espressif.cn"
 若 agent 只拿到仓库地址、尚无 checkout：
 
 ```bash
-git clone <repository-url> ai-passport
-cd ai-passport
+git clone https://github.com/ihonghong/ai-passport-macos-voice-remote.git
+cd ai-passport-macos-voice-remote
 git status --short --branch
 ```
 
@@ -239,16 +239,16 @@ sudo usermod -aG dialout "${USER}"
 
 烧录前关闭 WebSerial 页面和其他串口监视器。不要长期以 root 身份运行日常开发流程。使用 `Ctrl+]` 退出 ESP-IDF monitor。
 
-优先从 `0x0` 烧录经过验证的合并镜像：
+已出厂配置的设备使用永久 Recovery 和官方小程序安装经验证的 Release。本地开发使用
+分段烧录命令，以保留运行 NVS 与蓝牙配对：
 
 ```bash
-python -m esptool --chip esp32c3 -p <port> -b 460800 \
-    write-flash 0x0 build/FoloToy-AI-Passport-full.bin
-idf.py -p <port> monitor
+idf.py -p <port> flash monitor
 ```
 
 普通的 `build/FoloToy-AI-Passport.bin` 只是 app，只能位于 `0x10000`，不得烧到
-`0x0`。`idf.py flash` 只用于明确需要的增量开发烧录，不作为默认交付或验收方式。
+`0x0`。从 `0x0` 裸写合并镜像只用于明确的 USB 恢复，且必须先确认文件范围在
+`cardid` 前结束；该操作仍会重置运行 NVS 与蓝牙配对。
 
 ## 故障处理
 

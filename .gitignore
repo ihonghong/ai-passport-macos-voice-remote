@@ -4,3 +4,12 @@ sdkconfig.old
 managed_components/
 .vscode/
 .idea/
+.venv-mac-bridge/
+__pycache__/
+*.py[cod]
+
+# Optional user-owned pet plugin. The local files remain usable when present,
+# but are excluded because their redistribution license is not established.
+assets/images/local-pet-idle-clean.gif
+main/pet_local.c
+main/pet_local.h

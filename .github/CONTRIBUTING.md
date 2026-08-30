@@ -20,16 +20,19 @@ second development; the fork conventions are in
 - Follow [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) when participating in the
   community. For ordinary usage questions, see [`SUPPORT.md`](SUPPORT.md).
 - Do not commit credentials, tokens, authorization files, or personal data.
-- The repository's `main` branch stays in sync with the upstream baseline; fork
-  users develop feature work in `feature/*` branches (see `docs/fork-guide.md`).
+- `main` is this product's supported release branch. Develop changes in short-lived
+  feature branches and review upstream FoloToy changes before integrating them
+  manually (see `docs/fork-guide.md`).
 
 ## Development and verification
 
 Use ESP-IDF 5.5.3. For a clean-machine setup, follow the
 [environment bootstrap](../docs/development/environment-setup.md).
 
-Prefer the repository firmware gate for builds and flash its verified merged
-image at `0x0`. The direct IDF commands below are for incremental development.
+Prefer the repository firmware gate for builds. On a provisioned device, install
+its verified merged image through permanent Recovery and the official
+mini-program, or use segmented `idf.py flash` for development. A raw `0x0` write
+is a deliberate USB recovery operation that resets runtime NVS and pairing.
 
 ```bash
 source <path-to-esp-idf-v5.5.3>/export.sh
@@ -37,7 +40,7 @@ idf.py --version             # must report ESP-IDF v5.5.3
 ./tools/validate.sh --firmware # preferred merged-image build
 idf.py set-target esp32c3     # Configure the target chip (fresh checkout / after target change)
 idf.py build                  # Optional incremental application build
-idf.py flash monitor          # Optional incremental application flash
+idf.py flash monitor          # Segmented development flash; preserves NVS gaps
 idf.py fullclean              # Clear stale build state (never for user source changes)
 ```
 

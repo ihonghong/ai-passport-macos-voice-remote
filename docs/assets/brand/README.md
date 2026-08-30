@@ -51,7 +51,10 @@ When generating a marketing or showcase render from these references, keep the f
 - **Colorways**: use the shell reference as the base and change only the accent/shell palette for a new variant (for example a white, green, or black edition).
 - **Aspect**: renders at a 2:3 vertical ratio read best for the front view.
 
-Unless the reference image is licensed for reuse, use these files as an internal visual baseline rather than recycling them verbatim into published assets.
+These files were distributed as part of the MIT-licensed upstream repository and
+remain under that repository license unless a file-specific notice says otherwise.
+The license does not grant rights to unrelated third-party names or trademarks;
+do not imply endorsement when publishing derivative artwork.
 
 ## Tooling notes
 

@@ -1,0 +1,3 @@
+# Compatibility pointer. Install the canonical host requirements instead:
+#   python3 -m pip install -r host/macos/bridge/requirements.txt
+-r ../host/macos/bridge/requirements.txt

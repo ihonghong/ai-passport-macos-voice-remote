@@ -1,0 +1,46 @@
+name: Validate macOS host
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Validate installer paths
+        run: |
+          ./host/macos/install.sh --dry-run
+          if AI_PASSPORT_SUPPORT_DIR=/ ./host/macos/install.sh --dry-run; then
+            echo "Installer accepted an unsafe support path" >&2
+            exit 1
+          fi
+          if AI_PASSPORT_STATUS_APP="$HOME" ./host/macos/uninstall.sh --yes; then
+            echo "Uninstaller accepted an unsafe app path" >&2
+            exit 1
+          fi
+
+      - name: Test Bridge in an isolated environment
+        run: |
+          python3 -m venv /tmp/ai-passport-host-ci
+          /tmp/ai-passport-host-ci/bin/python -m pip install \
+            --disable-pip-version-check -r host/macos/bridge/requirements.txt
+          /tmp/ai-passport-host-ci/bin/python \
+            host/macos/bridge/mac_shortcut_bridge.py --self-test
+
+      - name: Type-check status menu app
+        run: |
+          xcrun swiftc -parse-as-library -typecheck \
+            host/macos/statusbar/mac_status_bar.swift \
+            -framework AppKit -framework CoreAudio
+          plutil -lint host/macos/statusbar/Info.plist \
+            host/macos/launchagents/com.aipassport.bridge.plist.template \
+            host/macos/launchagents/com.aipassport.status.plist.template

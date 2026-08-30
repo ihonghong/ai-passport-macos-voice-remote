@@ -14,4 +14,12 @@
 
 ## 目录说明
 
-> 当前为空骨架，用于存放后续加入的图片资源。加入资源时请同步更新本 `README.md` 的索引。
+> 加入资源时请同步更新本 `README.md` 的索引。
+
+## 本地可选资源
+
+- `local-pet-idle-clean.gif`：由用户的 Codex 宠物形象适配而来的 192 × 208、
+  6 帧待机动画，用于 AI Passport 仪表盘。固件使用本地预生成的 68 × 74 RGB565 帧，
+  不启用 GIF 解码器。由于没有独立的再分发许可证，GIF 和生成的 C 文件已被忽略；
+  `auto` 宠物选择仍让所有者在本机继续使用，但公开克隆不会包含这些文件。详见
+  [`main/plugins/pets/README.zh_CN.md`](../../main/plugins/pets/README.zh_CN.md)。

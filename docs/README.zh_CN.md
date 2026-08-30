@@ -12,6 +12,20 @@ FoloToy AI Passport 是一个开放式可穿戴 AI 硬件，本仓库是这款 A
 - AI 开发约定见 [`AGENTS.zh_CN.md`](../AGENTS.zh_CN.md) 与 [`docs/development/agent-guide.zh_CN.md`](development/agent-guide.zh_CN.md)；完整硬件上下文和故障知识见 [`docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md`](hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md)；
 - 构建结果与真机结果分开记录，禁止把"编译通过"描述成"硬件验证通过"。
 
+## 当前快捷键应用
+
+当前 fork 会直接进入 Mac 无线语音快捷键遥控器。三个实体键分别提供按住说话、回车和
+Command-Delete；内置麦克风通过 BLE HID 传输到仓库内的 macOS Bridge；屏幕显示
+时间、电量、连接状态、可选模型额度、今日 Token 和可选的编译期宠物。
+
+公开固件的语音键默认发送**左 Control + 左 Command**。这只是项目默认映射，不是所有
+Mac 或语音输入工具的系统默认值；用户必须在自己的听写应用或输入法中，把语音触发
+快捷键手动绑定为相同组合。
+
+从克隆到可用请先阅读完整的 [macOS 主机端指南](../host/macos/README.zh_CN.md)。主机
+Provider 和固件宠物接口都保持为很薄的插件，因此公开克隆不依赖 Codex 或私人素材，
+而当前所有者的本地配置仍可继续使用两者。
+
 ## 硬件能力契约
 
 下表描述的是当前 `main` 已提供的应用能力，而不是芯片数据手册中所有可能的能力。
@@ -23,14 +37,23 @@ FoloToy AI Passport 是一个开放式可穿戴 AI 硬件，本仓库是这款 A
 | 音频 | ES8311，I2S0 全双工 PCM，可播放和麦克风录音 | `bsp_audio_*` | PCM 读写为阻塞调用，应放工作任务；格式切换必须保留 BSP 内的 close/open 流程 |
 | 电池 | CW2017 的 SOC 与电压读取 | `bsp_battery_*` | 是可缺省能力；读数精度取决于电芯与 profile，不能等同于已标定结果 |
 | Wi-Fi | 按需 2.4 GHz STA 扫描 demo | `main/demo_wifi.c` | 仅扫描；不连接、不存凭证、不验证天线/射频表现 |
-| Bluetooth LE | 按需以 `FoloPassport` 名义做不可连接的 NimBLE 广播 | `main/demo_ble.c` | ESP32-C3 不支持蓝牙经典；射频范围、共存与功耗需实测 |
+| Bluetooth LE | 以 `AI Passport` 提供可连接、加密的 HID，承载键盘、音频和紧凑状态报告；新 bond 使用屏幕显示的随机 6 位码 | `main/ble_keyboard.*`、`main/shortcut_protocol.*` | ESP32-C3 不支持蓝牙经典；改变配对配置可能使旧 bond 失效；modem sleep 与空闲/录音连接参数为尽力协商；8 kHz 单声道面向听写而非高保真录音 |
 | 低功耗 | 两秒浅睡眠与五秒深睡眠，均以 RTC 定时器唤醒 | `main/demo_low_power.c` | 深睡眠会重启应用；当前 demo 只提供 RTC 定时器唤醒 |
 | 共享总线 | ES8311 与 CW2017 共用 I2C0 | `bsp_i2c_*` | 所有设备复用 BSP 持有的总线；不能为扫描或新设备再创建同端口总线 |
 | 日志与烧录 | ESP32-C3 原生 USB Serial/JTAG | ESP-IDF console | GPIO18/19 保留给 USB；UART0 默认 TX GPIO21 与背光冲突 |
 
 所有引脚、地址、面板参数和按键电压窗口只在 [`components/bsp/include/bsp_pins.h`](../components/bsp/include/bsp_pins.h) 定义。应用代码不得复制这些常量。完整引脚表、面板初始化、ADC 阈值、I2C 地址规则、音频时钟和内存说明见 [AI 硬件开发指南](hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md)。
 
-应用也可以使用 ESP-IDF 提供的定时器、FreeRTOS 任务和内部 Flash/NVS；番茄钟分支提供了 NVS 示例。Wi-Fi 和 Bluetooth LE 仍是 ESP-IDF 应用服务而非 BSP API：其菜单页面仅在打开时初始化对应协议栈、退出时释放。`demo/claude-buddy-port` 仍是更完整的 BLE 应用架构参考，不能替代对当前板卡天线、射频表现、功耗和共存行为的实测。当前产品与固件基线使用 8 MB Flash，包含 3 MB factory-app 分区，并固定保留设备身份与永久 Recovery 区域，使二创固件仍可通过小程序安装。
+应用也可以使用 ESP-IDF 提供的定时器、FreeRTOS 任务和内部 Flash/NVS；番茄钟分支提供了 NVS 示例。Wi-Fi 和 Bluetooth LE 仍是 ESP-IDF 应用服务而非 BSP API。当前快捷键应用持有 BLE 协议栈以维持 HID 连接，旧的扫描和广播页面保留为实现参考。`demo/claude-buddy-port` 仍是更完整的 BLE 应用架构参考，不能替代对当前板卡天线、射频表现、功耗和共存行为的实测。当前产品与固件基线使用 8 MB Flash，包含 3 MB factory-app 分区，并固定保留设备身份与永久 Recovery 区域，使二创固件仍可通过小程序安装。
+
+快捷键应用会保留已绑定的 HID 连接，以便及时发送按键，但空闲时不会传输麦克风
+数据。断开连接后先快速广播 30 秒，再降低广播频率；任意实体按键都会重新开启快速
+重连窗口。固件已启用动态降频与 Bluetooth modem sleep；在显示、音频和按键延迟完成
+联合实机验证前，自动 Light-sleep 仍保持关闭。
+
+使用电池时，本地操作会让背光以 70% 保持 10 秒，随后降到 15%；无操作满 1 分钟后
+进入仍可查看的 5% 深度空闲显示，同时暂停 UI 动画并降低电量轮询频率。任意实体键会
+恢复正常亮度，并继续执行该按键原本的动作。
 
 ### 不属于当前能力契约的事项
 
@@ -83,7 +106,8 @@ git diff main...origin/demo/tetris-game -- main components tests
 git show origin/demo/tetris-game:main/demo_tetris.c
 ```
 
-开始新应用。本仓库在同一个基线上承载多个独立项目：从 `main` 开始后，应创建 `feature/*` 分支并在该分支上开发，**不要**直接在 `main` 上开发。每个项目的最终分支都是 `feature/*`（如 `feature/my-passport-app`），让 `main` 保持干净的上游基线，各项目互不纠缠。
+从本仓库 `main` 创建短生命周期 `feature/*` 分支开发，审查后合回 `main`。FoloToy
+上游更新需人工审查和整合，本产品 `main` 不再自动同步上游。
 
 ```bash
 git switch main
@@ -97,7 +121,8 @@ git switch -c feature/my-passport-app
 ```text
 components/bsp/include/  BSP 公开 API 与 bsp_pins.h 硬件事实
 components/bsp/src/      显示、按键、音频、电池、共享 I2C 实现
-main/                    最小菜单、LVGL UI 与独立硬件演示页
+main/                    快捷键应用、通信协议、UI 与编译期插件
+host/macos/              可安装的 Mac Bridge、菜单栏应用、Provider 与脚本
 tests/                   可脱离硬件运行的轻量逻辑测试源
 tools/                   本地与 CI 共用的验证及固件校验脚本
 docs/                    项目说明、变更记录、工程/协作规范与设计参考
@@ -117,5 +142,7 @@ LICENSE                  仓库许可证
 - [`docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md`](hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md) — 硬件开发指南（引脚表、验收矩阵、故障速查）。
 - [`AGENTS.zh_CN.md`](../AGENTS.zh_CN.md) — AI 协作规范入口。
 - [`docs/fork-guide.zh_CN.md`](fork-guide.zh_CN.md) — fork 工作流。
+- [`host/macos/README.zh_CN.md`](../host/macos/README.zh_CN.md) — 从克隆到可用的 macOS 安装、配置、Provider 插件与排障。
+- [`main/plugins/pets/README.zh_CN.md`](../main/plugins/pets/README.zh_CN.md) — 可选且可再分发的宠物接入方式。
 
 > 注：本 README 只描述产品与仓库，不含给 AI 的执行说明；AI 开始开发前请先读根目录 `AGENTS.zh_CN.md`，再按任务路由读取相关文档。

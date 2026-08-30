@@ -29,14 +29,22 @@ CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
 
 # --- LVGL ---
 CONFIG_LV_COLOR_DEPTH_16=y
+CONFIG_LV_FONT_MONTSERRAT_10=y
+CONFIG_LV_FONT_MONTSERRAT_12=y
 CONFIG_LV_FONT_MONTSERRAT_14=y
+CONFIG_LV_FONT_MONTSERRAT_16=y
 CONFIG_LV_FONT_MONTSERRAT_20=y
+CONFIG_LV_FONT_MONTSERRAT_32=y
 # LVGL 内置 malloc 池大小(KB)。它是独立静态区、不与系统堆共享,配大了会白白占用 RAM。
 # 本 demo UI 简单,24KB 足够;若自建复杂界面出现绘制卡死/看门狗,调大此值。
 CONFIG_LV_MEM_SIZE_KILOBYTES=24
 
 # --- 系统 ---
 CONFIG_FREERTOS_HZ=1000
+# 仅启用动态降频，不启用自动 Light-sleep。显示、I2S 与 BLE 的实时行为继续由
+# 各自驱动锁保护；空闲时 CPU 从默认最高频率降至 40 MHz 主晶振频率。
+CONFIG_PM_ENABLE=y
+CONFIG_PM_DFS_INIT_AUTO=y
 
 # --- Bluetooth LE / NimBLE ---
 # ESP32-C3 仅支持 BLE；示例只启用单连接 peripheral 所需的最小 host 配置。
@@ -48,4 +56,17 @@ CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
 CONFIG_BT_NIMBLE_ROLE_OBSERVER=n
 CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
 CONFIG_BT_NIMBLE_HOST_BASED_PRIVACY=n
-CONFIG_BT_NIMBLE_NVS_PERSIST=n
+CONFIG_BT_NIMBLE_NVS_PERSIST=y
+CONFIG_BT_NIMBLE_HID_SERVICE=y
+CONFIG_BT_NIMBLE_SM_LVL=2
+CONFIG_BT_NIMBLE_SVC_HID_MAX_RPTS=4
+CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU=256
+# The vendor HID microphone produces about 50 notifications/s. Keep enough
+# host-task headroom for connection updates and encrypted control reports while
+# streaming; the previous 4096-byte default faulted under sustained traffic.
+CONFIG_BT_NIMBLE_HOST_TASK_STACK_SIZE=6144
+# BLE 控制器在广播/连接事件之间进入 modem sleep。板级资料未确认存在外部
+# 32 kHz 晶振，因此使用 ESP32-C3 主晶振作为可靠的低功耗参考时钟。
+CONFIG_BT_CTRL_MODEM_SLEEP=y
+CONFIG_BT_CTRL_MODEM_SLEEP_MODE_1=y
+CONFIG_BT_CTRL_LPCLK_SEL_MAIN_XTAL=y

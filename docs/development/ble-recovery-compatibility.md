@@ -68,3 +68,9 @@ for the protected partitions. A raw single-file write from `0x0` is safe only
 when its byte range ends before `cardid`; a merged artifact containing later
 resource partitions spans the gap and must not be raw-flashed to a provisioned
 device.
+
+Here, "safe" refers only to preserving `cardid` and permanent Recovery. The
+current merged file contains `0xFF` padding across runtime NVS at `0x9000`, so a
+raw `0x0` write still erases the Bluetooth bond and other runtime state. Use the
+mini-program Recovery installer for a normal release installation or segmented
+`idf.py flash` for development when that state must be preserved.

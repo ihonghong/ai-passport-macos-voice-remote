@@ -22,7 +22,7 @@ Jian Mo, and more.
 - **Character directory**: browse all character packs as a scrollable list. Each
   entry is a pack of voice clips (e.g. jojo, MC, meme cat, Liu Huaqiang,
   Liu Haizhu, Kaqiu Mixue'er, Luyin, Indian A-san, Ji Yi Kawai, Haji Mi,
-  Nailong, Bao Bao Duda Leilei, Xiao TuanTuan, Xiao Ming Jian Mo).
+  Nailong, Bao Bao Duda Leilei, a local pet, Xiao Ming Jian Mo).
 - **Clip list**: enter a pack to see its clips by name.
 - **One-tap playback**: press OK to play the selected clip; built-in decoding
   plays 16 kHz mono Opus audio.

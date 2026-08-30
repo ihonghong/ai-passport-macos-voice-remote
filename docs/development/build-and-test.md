@@ -10,8 +10,9 @@ the [environment bootstrap](environment-setup.md) first.
 > Prefer `./tools/validate.sh --firmware` for firmware builds and flash its
 > verified `build/FoloToy-AI-Passport-full.bin` at offset `0x0` only when the
 > target is blank or the merged byte range ends before protected `cardid`.
-> On a provisioned device, prefer mini-program install or segmented
-> `idf.py flash`. Treat
+> Even in the latter case, a raw write resets runtime NVS and the Bluetooth
+> bond. On a provisioned device, prefer mini-program Recovery installation or
+> segmented `idf.py flash`. Treat
 > `idf.py build` and `idf.py flash` as incremental development commands, not the
 > default delivery path.
 

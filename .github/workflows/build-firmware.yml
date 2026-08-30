@@ -32,6 +32,9 @@ jobs:
 
       - name: Build firmware (ESP-IDF 5.5.3 / esp32c3)
         uses: espressif/esp-idf-ci-action@9d38657f3d789ca759b2b37aaf5ceffbc42c4f0d # v1
+        env:
+          AI_PASSPORT_PET_PLUGIN: none
+          AI_PASSPORT_PROVIDER_PROFILE: generic
         with:
           esp_idf_version: v5.5.3
           target: esp32c3
@@ -67,6 +70,6 @@ jobs:
       - name: Create release (tag push)
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
-          name: "${{ github.ref_name }}"
+          name: "${{ github.ref_name }} — AI Passport Mac Voice Remote"
           files: release/FoloToy-AI-Passport-full.bin
           if-no-files-found: error

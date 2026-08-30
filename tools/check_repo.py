@@ -18,6 +18,10 @@ SECRET_PATTERNS = {
     "GitHub token": re.compile(r"(?:ghp_|github_pat_)[A-Za-z0-9_]{20,}"),
     "AWS access key": re.compile(r"AKIA[0-9A-Z]{16}"),
     "private key": re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
+    "ByteDance email": re.compile(
+        r"\b[A-Z0-9._%+-]+@(?:bytedance|byted)\.com\b", re.IGNORECASE
+    ),
+    "concrete macOS home path": re.compile("/" + r"Users/(?!<)[^/\s]+/"),
 }
 ROOT_MARKDOWN_ALLOWLIST = {
     "AGENTS.md",

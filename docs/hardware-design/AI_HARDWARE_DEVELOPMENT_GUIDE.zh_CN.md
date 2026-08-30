@@ -271,8 +271,9 @@ SOC 准确度取决于电芯与 profile 的匹配程度。本驱动给出的是�
 [环境引导](../development/environment-setup.zh_CN.md)为准。项目严格使用
 **ESP-IDF 5.5.3**。不要直接使用系统中的任意 `idf.py`，也不要将 Arduino、
 PlatformIO 或其他 ESP-IDF 版本生成的配置混入当前工程。
-编译优先使用 `./tools/validate.sh --firmware` 生成并验证合并固件，烧录优先把该
-镜像写入 `0x0`；直接 `idf.py build/flash` 只用于增量开发。
+编译优先使用 `./tools/validate.sh --firmware` 生成并验证合并固件。已出厂配置的设备
+通过永久 Recovery 和官方小程序安装该产物；直接 `idf.py build/flash` 用于增量开发。
+把合并镜像从 `0x0` 裸写视为明确的 USB 恢复操作，它会重置运行 NVS 与蓝牙配对。
 
 ### 12.1 Linux / WSL 准备
 

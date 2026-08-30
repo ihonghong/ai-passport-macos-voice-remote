@@ -10,7 +10,7 @@
 
 ## 触发条件
 
-- **push tag**：当向仓库推送 tag（如 `v1.0.0`、`v0.1.0-feature/xxx`）时触发自动构建，并在构建成功后自动创建 Release（带固件产物）。
+- **push tag**：当向仓库推送 tag（如 `v0.1.0`、`v0.2.0`）时触发自动构建，并在构建成功后自动创建 Release（带固件产物）。
 - **workflow_dispatch**：可在 GitHub Actions 页面手动触发（用于调试/预发布验证）。
 
 > 平时 push 到分支（非 tag）**不会**触发构建；只有打 tag 才会。
@@ -27,30 +27,31 @@
 
 ## 产物
 
-- `FoloToy-AI-Passport-full.bin`：合并后的完整固件，可直接烧录（唯一产物）。
+- `FoloToy-AI-Passport-full.bin`：供永久 Recovery 解析的合并完整固件（唯一正式发布产物）。
 
-## 在线烧录
+## 安全安装 Release
 
-使用浏览器在本机完成写入与校验，固件不会上传服务器。打开 **在线刷机工具**：
+合并产物 `FoloToy-AI-Passport-full.bin` 可用于两种不同的安装机制，不能把两者
+当作相同操作：
 
-`https://ai-passport.folotoy.cn/tools/web-flasher/`
+- **已出厂配置设备的日常安装：**上电时按住上键 5 秒进入永久 Recovery，再用
+  官方小程序安装合并产物。Recovery 会解析镜像，并保护每台设备的 `cardid`
+  与永久 Recovery 分区。
+- **本地开发：**使用分段 `idf.py flash`。它会按明确偏移写入 bootloader、分区表
+  与主应用，不会用填充数据覆盖中间的运行 NVS。
+- **明确的 USB 裸写恢复：**浏览器刷机工具或 `esptool` 从 `0x0` 写入合并文件时，
+  会擦写文件范围内的全部扇区，包括被 `0xFF` 填充的 NVS 间隔，因此会重置蓝牙配对。
+  它不应是默认升级路径。只有已校验文件在 `cardid` 之前结束，且用户接受重新
+  配对时才使用；严禁裸写跨过 `cardid` 后续资源分区的合并产物。
 
-步骤：连接设备（USB JTAG/serial debug unit）→ 选择本 Release 的合并固件 `FoloToy-AI-Passport-full.bin` → 选择波特率（如 460800）→ 开始写入。目标是 8MB Flash 板卡，无需其它参数。
+浏览器可在本地写入和校验且不上传固件，但这不会让裸写具备 Recovery 的分区
+保护语义。完整分区契约见 [BLE 与 Recovery 兼容性](ble-recovery-compatibility.zh_CN.md)。
 
 ## Release 标题
 
-当本仓库从同一棵源码树发布多个不同应用时，只有版本号看不出这个 Release 是哪个应用。给每个 tag 起一个
-同时带版本与应用名的名字，并确保 Release 标题两者都显示。
-
-- **Tag 命名约定**：按 `v<版本>-<应用名>` 小写连字符命名，例如 `v0.1.0-voice-keychain`、
-  `v1.0.0-pocket-pomodoro`。`<应用名>` 是该 Release 构建的应用（见
-  `plays/<username>/<app-name>/` 档案命名）。多应用共享同一棵树时，只写版本号的 tag 会有歧义。
-- **发布成功后，核对 Release 标题**：workflow 会把标题设为 tag 名，因此命名正确的 tag 本身就显示成
-  `v0.1.0-voice-keychain`。若 tag 没带应用名，或标题一眼看不出是哪个应用，就编辑该 Release
-  （GitHub：`Edit release`；GitLab：编辑 tag），让标题为 `<版本> <应用名>`，例如 `v0.1.0 Voice
-  Keychain`。快速扫一遍 Release 列表，就能区分每个 Release 是哪个应用。
-- **标题与 tag 保持一致**：用 `<版本>-<应用名>`，让应用名在 tag 列表和 Release 列表里都可见。不要只靠
-  人类可读的正文承载应用名。
+本仓库只发布一个受支持的产品。Tag 使用 `v0.1.0` 这样的语义化版本，workflow 将
+Release 标题发布为 `v0.1.0 — AI Passport Mac Voice Remote`。无需在 tag 中重复应用名，
+仓库名和 Release 标题已经表达产品身份。
 
 ## Release 说明
 
@@ -59,10 +60,11 @@ tag 触发的 Release 只有在合并固件与它的 Release 说明一起发布�
 
 - **功能（What's new / 功能）**：本次 Release 相对上一版新增或变更的功能、行为或修复。面向用户，
   不是 commit 日志。
-- **方法（How to build / 方法）**：如何生成并校验合并固件（`./tools/validate.sh --firmware` 或
-  `idf.py build`），以及要烧录的产物文件（从 `0x0` 烧录的 `FoloToy-AI-Passport-full.bin`）。
-- **使用（How to use / 使用）**：如何烧录（上方在线刷机工具），以及本次 Release 的关键交互或硬件
-  要求。
+- **方法（How to build / 方法）**：使用 `./tools/validate.sh --firmware` 生成并校验合并固件
+  （不要以未校验的 `idf.py build` 代替），以及生成的 Recovery 兼容产物
+  `FoloToy-AI-Passport-full.bin`。
+- **使用（How to use / 使用）**：日常安装推荐永久 Recovery 与官方小程序，开发过程说明
+  分段 `idf.py flash`，并把从 `0x0` 的 USB 裸写明确标记为会重置配对的恢复操作。
 
 用英文写 Release 说明（项目双语时再配一份简体中文），并在 GitHub/GitLab Release 上链接它们。对
 用户可见的行为，保持与 `docs/CHANGELOG.md` 一致。

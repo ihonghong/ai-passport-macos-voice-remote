@@ -12,6 +12,24 @@ The repository is organized around the following principles:
 - Development conventions for AI assistants live in [`AGENTS.md`](../AGENTS.md) and [`docs/development/agent-guide.md`](development/agent-guide.md); the complete hardware context and troubleshooting knowledge is in [`docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md`](hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md).
 - Build results and physical-device results are reported separately. A successful build must never be presented as successful hardware validation.
 
+## Current shortcut application
+
+This fork currently boots directly into a wireless Mac voice-shortcut remote.
+Its three buttons provide push-to-talk, Return, and Command-Delete; the built-in
+microphone is streamed over BLE HID to the repository's macOS bridge; and the
+display shows time, battery, connection state, optional model quota, daily token
+usage, and an optional compile-time pet.
+
+The public firmware voice button defaults to **Left Control + Left Command**.
+This is a project mapping rather than a universal macOS or voice-input default;
+each user must manually bind the voice trigger in their dictation application or
+input method to the same combination.
+
+For a clone-to-working setup, start with the complete
+[macOS host guide](../host/macos/README.md). The host Provider and firmware pet
+interfaces are deliberately small plugins, so a public clone works without
+Codex or private artwork while this owner's local configuration keeps both.
+
 ## Hardware capability contract
 
 The table below describes the application capabilities implemented by the current `main` branch. It is not a list of everything that might be possible according to the chip datasheet.
@@ -23,14 +41,26 @@ The table below describes the application capabilities implemented by the curren
 | Audio | ES8311 with full-duplex PCM over I2S0, supporting playback and microphone capture | `bsp_audio_*` | PCM reads and writes block and belong in a worker task; format changes must retain the BSP close/open sequence |
 | Battery | CW2017 state-of-charge and voltage readings | `bsp_battery_*` | This capability is optional at runtime; accuracy depends on the cell and battery profile and is not equivalent to a calibrated result |
 | Wi-Fi | On-demand 2.4 GHz STA scan demo | `main/demo_wifi.c` | Scans only; it does not connect, store credentials, or validate antenna/RF performance |
-| Bluetooth LE | On-demand non-connectable NimBLE advertising as `FoloPassport` | `main/demo_ble.c` | ESP32-C3 does not support Bluetooth Classic; radio range, coexistence, and power draw require device measurements |
+| Bluetooth LE | Connectable encrypted HID as `AI Passport`, carrying keyboard, audio, and compact status reports; new bonds use a random six-digit code shown on the display | `main/ble_keyboard.*`, `main/shortcut_protocol.*` | ESP32-C3 does not support Bluetooth Classic; pairing changes can invalidate a stored bond; modem sleep and idle/streaming connection profiles are best-effort; 8 kHz mono audio is optimized for dictation rather than hi-fi recording |
 | Low power | Two-second light sleep and five-second deep sleep, both with RTC timer wakeup | `main/demo_low_power.c` | Deep sleep restarts the application; the current demo exposes RTC timer wake only |
 | Shared bus | ES8311 and CW2017 share I2C0 | `bsp_i2c_*` | Every device must reuse the bus owned by the BSP; do not create another bus on the same port for scanning or a new device |
 | Logging and flashing | Native ESP32-C3 USB Serial/JTAG | ESP-IDF console | GPIO18/19 are reserved for USB; the default UART0 TX on GPIO21 conflicts with the backlight |
 
 All pins, addresses, panel parameters, and button voltage windows are defined only in [`components/bsp/include/bsp_pins.h`](../components/bsp/include/bsp_pins.h). Application code must not duplicate these constants. See the [AI Hardware Development Guide](hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md) for the complete pin map, panel initialization, ADC thresholds, I2C addressing rules, audio clocks, and memory details.
 
-Applications may also use ESP-IDF timers, FreeRTOS tasks, and internal Flash/NVS; the Pomodoro branch contains an NVS example. Wi-Fi and Bluetooth LE remain ESP-IDF application services rather than BSP APIs: their menu pages initialize each stack only while open and release it on exit. `demo/claude-buddy-port` remains a fuller BLE application architecture reference, not a substitute for measuring the current board's antenna, RF performance, power consumption, and coexistence behavior. The current product and firmware baseline uses 8 MB Flash with a 3 MB factory-app partition plus fixed protected identity and permanent-Recovery regions so derivative firmware stays installable through the mini-program.
+Applications may also use ESP-IDF timers, FreeRTOS tasks, and internal Flash/NVS; the Pomodoro branch contains an NVS example. Wi-Fi and Bluetooth LE remain ESP-IDF application services rather than BSP APIs. The current shortcut application owns the BLE stack for its persistent HID connection, while the older scan and advertising pages remain implementation references. `demo/claude-buddy-port` remains a fuller BLE application architecture reference, not a substitute for measuring the current board's antenna, RF performance, power consumption, and coexistence behavior. The current product and firmware baseline uses 8 MB Flash with a 3 MB factory-app partition plus fixed protected identity and permanent-Recovery regions so derivative firmware stays installable through the mini-program.
+
+The shortcut application keeps the bonded HID link available for immediate key
+delivery but does not stream microphone data while idle. After a disconnect it
+advertises quickly for 30 seconds, then backs off until a physical press restores
+the fast reconnect window. Dynamic frequency scaling and Bluetooth modem sleep
+are enabled; automatic Light-sleep remains disabled until display, audio, and
+button latency are validated together on the device.
+
+On battery power, local activity keeps the backlight at 70% for 10 seconds,
+then it dims to 15%. After one minute without activity it enters a still-visible
+5% deep-idle display, pauses UI animation, and reduces battery polling. Any
+physical button both restores the active display and performs its normal action.
 
 ### Capabilities outside the current contract
 
@@ -84,7 +114,9 @@ git diff main...origin/demo/tetris-game -- main components tests
 git show origin/demo/tetris-game:main/demo_tetris.c
 ```
 
-Start a new application. This repository hosts several independent projects on one baseline: after starting from `main`, create a `feature/*` branch and develop the application there — do not develop directly on `main`. Each project's final branch is `feature/*` (e.g. `feature/my-passport-app`), kept separate so `main` stays a clean upstream baseline and the projects do not entangle.
+Start a change from this repository's `main`, develop it on a short-lived
+`feature/*` branch, and merge it back after review. FoloToy upstream changes are
+reviewed and integrated manually; this product's `main` is not auto-synchronized.
 
 ```bash
 git switch main
@@ -98,7 +130,8 @@ Example branches may change the same menu, configuration, or driver in incompati
 ```text
 components/bsp/include/  Public BSP APIs and bsp_pins.h hardware facts
 components/bsp/src/      Display, button, audio, battery, and shared-I2C implementations
-main/                    Minimal menu, LVGL UI, and independent hardware demo pages
+main/                    Shortcut application, protocol, UI, and compile-time plugins
+host/macos/              Installable Mac bridge, menu-bar app, providers, and scripts
 tests/                   Lightweight logic tests that can run without hardware
 tools/                   Shared local/CI validation and firmware verification scripts
 docs/                    Project docs, changelog, engineering/contribution rules, and design references
@@ -118,5 +151,7 @@ LICENSE                  Repository license
 - [`docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md`](hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.md) — pin map, acceptance matrix, and troubleshooting guide.
 - [`AGENTS.md`](../AGENTS.md) — mandatory entry point for AI-assisted work.
 - [`docs/fork-guide.md`](fork-guide.md) — fork branch and documentation workflow.
+- [`host/macos/README.md`](../host/macos/README.md) — clone-to-working macOS installation, configuration, Provider plugins, and troubleshooting.
+- [`main/plugins/pets/README.md`](../main/plugins/pets/README.md) — optional redistributable pet integration.
 
 > This README describes the product and repository. AI agents must begin with `AGENTS.md` and follow its task-specific routing.

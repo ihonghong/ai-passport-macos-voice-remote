@@ -87,7 +87,14 @@ flowchart TD
 
 ## 发布后的真机验证
 
-当交付动作（A 或 B）产出了合并完整构建时，在把项目视为完成前先到真机验证。下载该 release 的合并完整固件（`FoloToy-AI-Passport-full.bin`，从 `0x0` 烧录的完整构建），烧录到设备并确认正常运行。不要把一次成功的构建或上传当作硬件验证：这一步证明 release 实际指向的产物能在真实硬件上启动并工作。产物来自 release 资产（CI/CD 的 `full.bin`），或对无 CI 产物的 Git release，来自开发者本地构建的 `full.bin`。若不能运行，先停下修复，再继续收口。产物与烧录见 [`CI-build-and-release.md`](CI-build-and-release.md)。
+当交付动作（A 或 B）产出了合并完整构建时，在把项目视为完成前先到真机验证。下载该
+release 的合并完整固件 `FoloToy-AI-Passport-full.bin`，对已出厂配置的设备使用永久
+Recovery 和官方小程序安装，然后确认正常运行。只在明确验收开发烧录路径时才使用分段
+烧录；从 `0x0` 的 USB 裸写会重置运行 NVS 与蓝牙配对。不要把一次成功的构建或上传
+当作硬件验证：这一步证明 release 实际指向的产物能在真实硬件上启动并工作。产物来自
+release 资产（CI/CD 的 `full.bin`），或对无 CI 产物的 Git release，来自开发者本地构建的
+`full.bin`。若不能运行，先停下修复，再继续收口。产物与安全安装路径见
+[`CI-build-and-release.md`](CI-build-and-release.md)。
 
 ## 共同的安全与同意门槛
 

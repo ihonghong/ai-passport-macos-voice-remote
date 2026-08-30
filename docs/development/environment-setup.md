@@ -189,8 +189,8 @@ comes from `components/bsp/idf_component.yml` and the tracked
 If the agent was given a repository URL but has no checkout yet:
 
 ```bash
-git clone <repository-url> ai-passport
-cd ai-passport
+git clone https://github.com/ihonghong/ai-passport-macos-voice-remote.git
+cd ai-passport-macos-voice-remote
 git status --short --branch
 ```
 
@@ -283,18 +283,18 @@ Close WebSerial pages and other serial monitors before flashing. Do not run the
 normal development flow permanently as root. Exit the ESP-IDF monitor with
 `Ctrl+]`.
 
-Prefer flashing the verified merged image from offset `0x0`:
+On a provisioned device, use permanent Recovery and the official mini-program to
+install a verified release. For local development, use the segmented flash
+command so runtime NVS and pairing are preserved:
 
 ```bash
-python -m esptool --chip esp32c3 -p <port> -b 460800 \
-    write-flash 0x0 build/FoloToy-AI-Passport-full.bin
-idf.py -p <port> monitor
+idf.py -p <port> flash monitor
 ```
 
 The ordinary `build/FoloToy-AI-Passport.bin` is application-only and belongs at
-`0x10000`; it must not be written to `0x0`. Use `idf.py flash` only for an
-intentional incremental development flash, not as the default delivery or
-acceptance path.
+`0x10000`; it must not be written to `0x0`. Raw-writing the merged image at
+`0x0` is only for deliberate USB recovery after verifying that its byte range
+ends before `cardid`; it still resets runtime NVS and the Bluetooth bond.
 
 ## Failure handling
 

@@ -1,0 +1,10 @@
+{
+  "device_name": "AI Passport",
+  "audio_device": "BlackHole 2ch",
+  "provider": {
+    "name": "none",
+    "settings": {
+      "refresh_seconds": 300
+    }
+  }
+}

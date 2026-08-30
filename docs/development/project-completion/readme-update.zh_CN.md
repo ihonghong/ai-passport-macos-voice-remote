@@ -8,7 +8,7 @@
 
 根 README 路径特意留给 fork 所有者。上游的项目概览位于 `docs/README.md`；fork 可以添加自己的根 README 来解释其产品，而不替换上游文档。
 
-fork 的 `main` 与上游保持同步，产品工作放在 `feature/*` 分支上，因此根 README 会存在于多个分支。每个分支的根 README **各自处理**——`main` 的 README 和某个 `feature/*` 分支的 README 是两个独立决定。
+产品发布内容保留在 `main`，日常改动在 `feature/*` 分支开发，因此根 README 会存在于多个分支。每个分支的根 README **各自处理**——`main` 的 README 和某个 `feature/*` 分支的 README 是两个独立决定。
 
 ## 何时建议
 

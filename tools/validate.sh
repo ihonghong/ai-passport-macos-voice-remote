@@ -28,6 +28,11 @@ run_static_checks() {
         tests/test_ui_pixel_math.c main/ui_pixel_math.c \
         -o "${test_dir}/test_ui_pixel_math"
     "${test_dir}/test_ui_pixel_math"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+        tests/test_shortcut_protocol.c main/shortcut_protocol.c \
+        -o "${test_dir}/test_shortcut_protocol"
+    "${test_dir}/test_shortcut_protocol"
+    python3 tools/mac_shortcut_bridge.py --self-test
     python3 tests/test_verify_firmware.py
     rm -rf "${test_dir}"
     echo "Host tests: PASS"
@@ -35,6 +40,8 @@ run_static_checks() {
 
 run_firmware_checks() (
     local validation_build_dir
+    local pet_plugin="${AI_PASSPORT_PET_PLUGIN:-none}"
+    local provider_profile="${AI_PASSPORT_PROVIDER_PROFILE:-generic}"
 
     if ! command -v idf.py >/dev/null 2>&1; then
         echo "ERROR: idf.py is not available; activate ESP-IDF 5.5.3 first." >&2
@@ -46,7 +53,9 @@ run_firmware_checks() (
 
     SDKCONFIG_DEFAULTS="${repo_root}/sdkconfig.defaults" \
         idf.py -B "${validation_build_dir}" \
-        -D "SDKCONFIG=${validation_build_dir}/sdkconfig" build
+        -D "SDKCONFIG=${validation_build_dir}/sdkconfig" \
+        -D "AI_PASSPORT_PET_PLUGIN=${pet_plugin}" \
+        -D "AI_PASSPORT_PROVIDER_PROFILE=${provider_profile}" build
     idf.py -B "${validation_build_dir}" merge-bin \
         -o "${validation_build_dir}/FoloToy-AI-Passport-full.bin"
     python3 tools/verify_firmware.py "${validation_build_dir}"

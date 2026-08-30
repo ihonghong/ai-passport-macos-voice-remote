@@ -192,8 +192,10 @@ for clean-machine installation, OS-specific prerequisites, and international or
 mainland China download routes. Use ESP-IDF 5.5.3 outside the repository,
 activate its `export.sh` in every terminal, and confirm the exact version.
 Prefer `./tools/validate.sh --firmware` to build the verified merged image and
-flash that image at `0x0`; use direct `idf.py build/flash` only for incremental
-development.
+install it through permanent Recovery and the official mini-program on a
+provisioned device. Use direct `idf.py build/flash` for incremental development;
+treat a raw `0x0` write as an explicit USB recovery that resets runtime NVS and
+pairing.
 
 ```bash
 source <path-to-esp-idf-v5.5.3>/export.sh

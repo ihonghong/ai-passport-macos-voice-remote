@@ -10,7 +10,9 @@
 
 ## 输入
 
-- 单个合并的 ESP `.bin`，从 `0x0` 烧录，用 `./tools/validate.sh --firmware` 构建并验证（它产出并校验合并完整镜像；不要用 `idf.py build` 代替，后者只用于日常增量编译）。
+- 单个镜像布局从 `0x0` 开始的合并 ESP `.bin`，用 `./tools/validate.sh --firmware`
+  构建并验证（它产出并校验供永久 Recovery 解析的合并完整镜像；不要用 `idf.py build`
+  代替，后者只用于日常增量编译）。
 - 一张代表产品的封面图（JPEG / PNG / WebP，≤10 MiB）。
 - 固件仓库的公开 HTTPS Git 页，从 `git remote -v` 解析。
 

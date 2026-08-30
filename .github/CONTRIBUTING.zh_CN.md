@@ -15,15 +15,17 @@
   [AI 硬件开发指南](../docs/hardware-design/AI_HARDWARE_DEVELOPMENT_GUIDE.zh_CN.md) 的完整硬件上下文。
 - 参与社区时请遵守 [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)；普通使用问题见 [`SUPPORT.md`](SUPPORT.md)。
 - 不要提交凭证、令牌、授权文件或个人数据。
-- 仓库的 `main` 分支始终与上游基线保持同步；fork 用户在 `feature/*` 分支开发功能（见 `docs/fork-guide.md`）。
+- `main` 是本产品受支持的发布分支。改动在短生命周期功能分支开发；FoloToy 上游更新
+  需先审查，再手动整合（见 `docs/fork-guide.zh_CN.md`）。
 
 ## 开发与验证
 
 使用 ESP-IDF 5.5.3。全新机器先按
 [环境引导](../docs/development/environment-setup.zh_CN.md)完成安装。
 
-编译优先运行仓库固件门禁，烧录优先把验证过的合并镜像写入 `0x0`。以下直接
-IDF 命令只用于增量开发。
+编译优先运行仓库固件门禁。已出厂配置的设备使用永久 Recovery 和官方小程序
+安装经验证的合并镜像；开发时使用分段 `idf.py flash`。从 `0x0` 裸写是会重置
+运行 NVS 与蓝牙配对的 USB 恢复操作。
 
 ```bash
 source <ESP-IDF-v5.5.3-路径>/export.sh
@@ -31,7 +33,7 @@ idf.py --version             # 必须输出 ESP-IDF v5.5.3
 ./tools/validate.sh --firmware # 优先生成合并固件
 idf.py set-target esp32c3     # 配置目标芯片（fresh checkout 后/换 target 后运行）
 idf.py build                  # 可选：增量 app 编译
-idf.py flash monitor          # 可选：增量 app 烧录
+idf.py flash monitor          # 分段开发烧录，保留 NVS 间隔
 idf.py fullclean              # 配置过期时清空生成状态（勿用于清理用户源码改动）
 ```
 
