@@ -9,6 +9,10 @@
 - Fixed native macOS discovery for the board's composite HID device: macOS
   reports the keyboard collection as the primary usage and the wireless-audio
   channel in its usage-pair list, so the App now checks both representations.
+- Fixed native macOS HID Output Report framing by including Report ID 3 in the
+  transmitted buffer, restoring runtime button maps, time, and usage metrics.
+- Kept the connected dashboard state stable when Up or Mid is tapped; only
+  Ready and Listening are shown during normal use.
 - Moved the BLE HID audio Bridge, PCM conversion, Core Audio output, input
   switching, runtime shortcuts, and Codex metrics into one native Swift menu-bar
   App. Added universal Apple-silicon/Intel packaging, login-item control, and a

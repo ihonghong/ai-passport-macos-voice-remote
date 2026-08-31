@@ -164,6 +164,12 @@ enum PassportProtocol {
         year: 2020, month: 1, day: 1
     ).date!
 
+    static func outputReportFrame(_ payload: Data) -> Data {
+        var report = Data([hostStatusReportID])
+        report.append(payload)
+        return report
+    }
+
     static let modifierUsages: [String: UInt8] = [
         "left_control": 0x01,
         "left_shift": 0x02,

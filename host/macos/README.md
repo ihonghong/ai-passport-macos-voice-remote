@@ -51,9 +51,11 @@ To build and install from a clone, run:
 If BlackHole is installed during this run, restart macOS and run the installer
 again. Then open **System Settings > Bluetooth**, connect **AI Passport**, and
 allow **AI Passport** under **Privacy & Security > Input Monitoring** when macOS
-asks. This one-time permission is required because the board exposes its
+asks. This permission is required because the board exposes its
 wireless-audio channel inside the same composite HID device that macOS identifies
-as a keyboard. Restart the App after granting access, then verify the installation:
+as a keyboard. A signed release keeps the permission across upgrades; rebuilding
+an ad-hoc-signed App locally changes its identity and may require enabling the
+new entry again. Restart the App after granting access, then verify the installation:
 
 ```bash
 ./host/macos/doctor.sh

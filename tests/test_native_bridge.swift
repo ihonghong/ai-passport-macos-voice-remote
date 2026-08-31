@@ -13,6 +13,10 @@ private struct NativeBridgeTests {
         let keymap = try PassportProtocol.keymapPayload(AppConfiguration.defaults.buttons)
         require(keymap.map { String(format: "%02x", $0) }.joined() == "4b09000028082ac3",
                 "native keymap must match the Python/firmware contract")
+        require(PassportProtocol.outputReportFrame(keymap).map {
+            String(format: "%02x", $0)
+        }.joined() == "034b09000028082ac3",
+                "IOKit output reports must include their report ID byte")
 
         let physical = try JSONDecoder().decode(AppConfiguration.self, from: Data("""
         {"buttons":{"up":{"modifiers":[],"key":"escape"},"mid":{"modifiers":[],"key":"space"},"down":{"modifiers":["left_shift"],"key":null}}}
@@ -49,6 +53,10 @@ private struct NativeBridgeTests {
         )
         require(status.map { String(format: "%02x", $0) }.joined() == "a541448289bcaa06",
                 "native host status must match the Python/firmware contract")
+        require(PassportProtocol.outputReportFrame(status).map {
+            String(format: "%02x", $0)
+        }.joined() == "03a541448289bcaa06",
+                "native status output must include report ID 3")
 
         let packet = try PassportProtocol.parseAudioReport(Data([
             2, 0x34, 0x12, 3, 1, 2, 3,

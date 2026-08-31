@@ -46,9 +46,10 @@ Xcode Command Line Tools。
 
 如果本次刚安装 BlackHole，请重启 macOS 后再次运行安装器。随后打开
 **系统设置 > 蓝牙**，连接 **AI Passport**。macOS 询问时，还需要在
-**隐私与安全性 > 输入监控**中允许 **AI Passport**；这是一次性权限，因为开发板把
-无线音频通道和键盘放在同一个复合 HID 设备中，而 macOS 会把它识别成键盘。授权后
-重启 App，再进行验证：
+**隐私与安全性 > 输入监控**中允许 **AI Passport**；该权限是必需的，因为开发板把
+无线音频通道和键盘放在同一个复合 HID 设备中，而 macOS 会把它识别成键盘。正式签名
+的 Release 升级后会保留权限；本地重新构建临时签名 App 会改变身份，可能需要再次开启
+新条目。授权后重启 App，再进行验证：
 
 ```bash
 ./host/macos/doctor.sh

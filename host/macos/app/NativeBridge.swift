@@ -222,13 +222,14 @@ final class NativeBridge {
     }
 
     private func setOutputReport(device: IOHIDDevice, payload: Data) throws {
-        let result = payload.withUnsafeBytes { raw -> IOReturn in
+        let report = PassportProtocol.outputReportFrame(payload)
+        let result = report.withUnsafeBytes { raw -> IOReturn in
             guard let base = raw.bindMemory(to: UInt8.self).baseAddress else {
                 return kIOReturnBadArgument
             }
             return IOHIDDeviceSetReport(
                 device, kIOHIDReportTypeOutput,
-                CFIndex(PassportProtocol.hostStatusReportID), base, payload.count
+                CFIndex(PassportProtocol.hostStatusReportID), base, report.count
             )
         }
         guard result == kIOReturnSuccess else {

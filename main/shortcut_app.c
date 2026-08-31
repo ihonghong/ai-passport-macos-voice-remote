@@ -27,8 +27,6 @@ typedef enum {
     UI_WAITING = 0,
     UI_READY,
     UI_LISTENING,
-    UI_MID_PRESSED,
-    UI_UP_PRESSED,
 } shortcut_ui_state_t;
 
 typedef enum {
@@ -232,7 +230,7 @@ static void ui_refresh_locked(void)
         "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"
     };
     static const char *const states[] = {
-        "PAIR", "READY", "LISTENING", "MID", "UP"
+        "PAIR", "READY", "LISTENING"
     };
 
     lv_label_set_text(s_time_label, s_time_text);
@@ -479,7 +477,6 @@ static void handle_button(const shortcut_button_event_t *event)
     if (event->ev != BSP_BTN_CLICK) return;
 
     if (event->btn == BSP_BTN_OK) {
-        s_ui_state = UI_MID_PRESSED;
         esp_err_t err = ble_keyboard_button_tap(SHORTCUT_BUTTON_MID);
         if (err != ESP_OK) ESP_LOGW("shortcut_app", "MID binding failed: %s",
                                     esp_err_to_name(err));
@@ -487,7 +484,6 @@ static void handle_button(const shortcut_button_event_t *event)
         protocol_write("KEY,RETURN");
         ui_refresh();
     } else if (event->btn == BSP_BTN_UP) {
-        s_ui_state = UI_UP_PRESSED;
         esp_err_t err = ble_keyboard_button_tap(SHORTCUT_BUTTON_UP);
         if (err != ESP_OK) ESP_LOGW("shortcut_app", "UP binding failed: %s",
                                     esp_err_to_name(err));
