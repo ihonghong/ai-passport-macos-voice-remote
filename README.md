@@ -17,6 +17,22 @@ replaceable plugins; a public clone does not require Codex or private artwork.
 It preserves the original [FoloToy AI Passport](https://github.com/FoloToy/ai-passport)
 history and MIT attribution while maintaining this product independently.
 
+## Interface states
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/images/voice-remote-ready.png" alt="AI Passport connected and ready" width="320"></td>
+    <td align="center"><img src="assets/images/voice-remote-listening.png" alt="AI Passport listening and streaming microphone audio" width="320"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Connected / Ready</strong></td>
+    <td align="center"><strong>Listening</strong></td>
+  </tr>
+</table>
+
+The usage metrics and pet shown here are optional plugin examples; the public
+default build works without either one.
+
 ## Install the firmware
 
 Download `FoloToy-AI-Passport-full.bin` from a GitHub Release. On a

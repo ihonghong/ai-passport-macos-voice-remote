@@ -16,6 +16,21 @@
 仓库保留原始 [FoloToy AI Passport](https://github.com/FoloToy/ai-passport) 历史与 MIT
 署名，并独立维护当前产品版本。
 
+## 界面状态
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/images/voice-remote-ready.png" alt="AI Passport 已连接并就绪" width="320"></td>
+    <td align="center"><img src="assets/images/voice-remote-listening.png" alt="AI Passport 正在倾听并传输麦克风音频" width="320"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>已连接 / Ready</strong></td>
+    <td align="center"><strong>Listening</strong></td>
+  </tr>
+</table>
+
+图中的用量指标和宠物均为可选插件示例；公开默认构建不依赖它们。
+
 ## 安装固件
 
 从 GitHub Release 下载 `FoloToy-AI-Passport-full.bin`。对已完成出厂配置的

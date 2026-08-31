@@ -11,6 +11,17 @@ Store reusable source images and generated display assets here.
 - Preserve editable sources where licensing permits, and record the source and license.
 - Never commit device QR secrets, credentials, or personal data in images.
 
+## README renders
+
+- `voice-remote-ready.png`: 720 × 960 documentation render of the connected,
+  ready state.
+- `voice-remote-listening.png`: 720 × 960 documentation render of active
+  microphone streaming, including the waveform and elapsed time.
+
+Both renders are deterministic 3× representations of the firmware's 240 × 320
+layout. Their generic pet mascot was generated specifically for this project;
+they contain no owner-local pet artwork or names.
+
 ## Local optional assets
 
 - `local-pet-idle-clean.gif`: six-frame, 192 × 208 idle animation adapted
