@@ -6,6 +6,11 @@
 
 ## Unreleased
 
+- Moved the BLE HID audio Bridge, PCM conversion, Core Audio output, input
+  switching, runtime shortcuts, and Codex metrics into one native Swift menu-bar
+  App. Added universal Apple-silicon/Intel packaging, login-item control, and a
+  release artifact; Python remains only as a migration and diagnostic reference,
+  while BlackHole remains the required system audio driver.
 - Added runtime shortcut maps for voice, send, and clear actions. The Mac host
   validates a human-readable configuration, sends one checksum-protected record
   over the existing HID Output Report, and firmware persists changed maps in

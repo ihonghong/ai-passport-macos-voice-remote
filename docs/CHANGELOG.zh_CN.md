@@ -6,6 +6,10 @@
 
 ## Unreleased
 
+- 将 BLE HID 音频 Bridge、PCM 转换、Core Audio 输出、输入切换、运行时快捷键与
+  Codex 用量统一迁入一个原生 Swift 菜单栏 App；新增 Apple 芯片／Intel 通用打包、
+  登录项控制与 Release 产物。Python 仅保留为迁移和诊断参考，BlackHole 仍是必要的
+  系统音频驱动。
 - 新增语音、发送与清除动作的运行时快捷键映射。Mac 主机校验可读配置后，通过现有
   HID Output Report 发送一条带 checksum 的完整记录；固件仅在映射变化时写入 NVS，
   不改变 report descriptor，也不会因此要求重新进行蓝牙配对。

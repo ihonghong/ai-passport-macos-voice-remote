@@ -36,6 +36,21 @@ run_static_checks() {
         tests/test_shortcut_keymap.c main/shortcut_keymap.c \
         -o "${test_dir}/test_shortcut_keymap"
     "${test_dir}/test_shortcut_keymap"
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        xcrun swiftc host/macos/app/BridgeProtocol.swift \
+            host/macos/app/MetricProvider.swift \
+            tests/test_native_bridge.swift \
+            -o "${test_dir}/test_native_bridge"
+        "${test_dir}/test_native_bridge"
+        xcrun swiftc -parse-as-library -typecheck \
+            host/macos/statusbar/mac_status_bar.swift \
+            host/macos/app/BridgeProtocol.swift \
+            host/macos/app/MetricProvider.swift \
+            host/macos/app/NativeAudioSink.swift \
+            host/macos/app/NativeBridge.swift \
+            -framework AppKit -framework CoreAudio -framework AudioToolbox \
+            -framework AudioUnit -framework IOKit -framework ServiceManagement
+    fi
     python3 tools/mac_shortcut_bridge.py --self-test
     python3 tests/test_verify_firmware.py
     rm -rf "${test_dir}"

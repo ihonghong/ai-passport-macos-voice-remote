@@ -2,11 +2,9 @@
 set -euo pipefail
 
 SCRIPT_DIR=${0:A:h}
-REPO_ROOT=${SCRIPT_DIR:h:h}
 SUPPORT_DIR=${AI_PASSPORT_SUPPORT_DIR:-"$HOME/Library/Application Support/AI Passport Bridge"}
-STATUS_APP=${AI_PASSPORT_STATUS_APP:-"$HOME/Applications/AI Passport Status.app"}
+PASSPORT_APP=${AI_PASSPORT_APP:-"$HOME/Applications/AI Passport.app"}
 LAUNCH_DIR=${AI_PASSPORT_LAUNCH_DIR:-"$HOME/Library/LaunchAgents"}
-LOG_DIR=${AI_PASSPORT_LOG_DIR:-"$HOME/Library/Logs"}
 YES=0
 DRY_RUN=0
 SKIP_START=0
@@ -26,12 +24,10 @@ safe_named_path() {
 
 safe_named_path "support directory" "$SUPPORT_DIR" "AI Passport Bridge"
 SUPPORT_DIR=$REPLY
-safe_named_path "status app" "$STATUS_APP" "AI Passport Status.app"
-STATUS_APP=$REPLY
+safe_named_path "application" "$PASSPORT_APP" "AI Passport.app"
+PASSPORT_APP=$REPLY
 safe_named_path "LaunchAgents directory" "$LAUNCH_DIR" "LaunchAgents"
 LAUNCH_DIR=$REPLY
-safe_named_path "log directory" "$LOG_DIR" "Logs"
-LOG_DIR=$REPLY
 
 usage() {
   cat <<'EOF'
@@ -39,7 +35,7 @@ Usage: ./host/macos/install.sh [--yes] [--dry-run] [--skip-start]
 
   --yes         Install BlackHole with Homebrew when it is missing.
   --dry-run     Print resolved locations without changing the machine.
-  --skip-start  Install files but do not replace or start LaunchAgents.
+  --skip-start  Install the app but do not open it.
 EOF
 }
 
@@ -54,11 +50,11 @@ while (( $# )); do
   shift
 done
 
-print "AI Passport macOS host installer"
-print "  repository: $REPO_ROOT"
-print "  bridge:     $SUPPORT_DIR"
-print "  status app: $STATUS_APP"
-print "  agents:     $LAUNCH_DIR"
+print "AI Passport native macOS installer"
+print "  source:  $SCRIPT_DIR"
+print "  app:     $PASSPORT_APP"
+print "  config:  $SUPPORT_DIR/config.json"
+print "  runtime: native Swift (no Python environment)"
 
 if (( DRY_RUN )); then
   print "Dry run only; no files or services were changed."
@@ -66,19 +62,7 @@ if (( DRY_RUN )); then
 fi
 
 [[ $(uname -s) == Darwin ]] || { print -u2 "macOS is required"; exit 1; }
-command -v python3 >/dev/null || { print -u2 "python3 is required"; exit 1; }
 command -v xcrun >/dev/null || { print -u2 "Xcode Command Line Tools are required"; exit 1; }
-
-LEGACY_BRIDGE=0
-if [[ -f "$SUPPORT_DIR/mac_shortcut_bridge.py" ]]; then
-  LEGACY_BRIDGE=1
-  print "Legacy Bridge layout detected; installing the current layout in place."
-fi
-if [[ -d "/Applications/AI Passport Status.app" && \
-      "$STATUS_APP" != "/Applications/AI Passport Status.app" ]]; then
-  print "Legacy status app detected at /Applications/AI Passport Status.app."
-  print "It is left untouched; the current app will be installed at $STATUS_APP."
-fi
 
 if ! system_profiler SPAudioDataType 2>/dev/null | grep -q "BlackHole 2ch"; then
   if (( YES )) && command -v brew >/dev/null; then
@@ -93,119 +77,35 @@ if ! system_profiler SPAudioDataType 2>/dev/null | grep -q "BlackHole 2ch"; then
   exit 1
 fi
 
-mkdir -p "$SUPPORT_DIR/bridge" "$STATUS_APP/Contents/MacOS" \
-  "$STATUS_APP/Contents/Resources" "$LAUNCH_DIR" "$LOG_DIR"
-cp "$SCRIPT_DIR/bridge/mac_shortcut_bridge.py" "$SUPPORT_DIR/bridge/"
-cp "$SCRIPT_DIR/bridge/configuration.py" "$SUPPORT_DIR/bridge/"
-PROVIDERS_DIR="$SUPPORT_DIR/bridge/providers"
-safe_named_path "provider directory" "$PROVIDERS_DIR" "providers"
-[[ ${PROVIDERS_DIR:h} == "$SUPPORT_DIR/bridge" ]] || {
-  print -u2 "Refusing provider path outside the Bridge directory: $PROVIDERS_DIR"
-  exit 2
-}
-rm -rf "$PROVIDERS_DIR"
-cp -R "$SCRIPT_DIR/bridge/providers" "$SUPPORT_DIR/bridge/providers"
-cp "$SCRIPT_DIR/bridge/requirements.txt" "$SUPPORT_DIR/bridge/"
-
+mkdir -p "$SUPPORT_DIR" "${PASSPORT_APP:h}" "$LAUNCH_DIR"
 if [[ ! -f "$SUPPORT_DIR/config.json" ]]; then
   cp "$SCRIPT_DIR/bridge/config.example.json" "$SUPPORT_DIR/config.json"
-  if (( LEGACY_BRIDGE )); then
-    CONFIG_PATH="$SUPPORT_DIR/config.json" python3 - <<'PY'
-import json
-import os
-from pathlib import Path
-
-path = Path(os.environ["CONFIG_PATH"])
-config = json.loads(path.read_text(encoding="utf-8"))
-config["provider"]["name"] = "auto"
-path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
-PY
-    print "Preserved the legacy automatic metric-provider behavior."
-  fi
 fi
 
-if [[ ! -x "$SUPPORT_DIR/venv/bin/python" ]]; then
-  python3 -m venv "$SUPPORT_DIR/venv"
+BUILD_OUTPUT=$(mktemp -d /tmp/ai-passport-install.XXXXXX)
+trap 'case "$BUILD_OUTPUT" in /tmp/ai-passport-install.*) rm -rf -- "$BUILD_OUTPUT" ;; esac' EXIT
+AI_PASSPORT_OUTPUT_DIR="$BUILD_OUTPUT" \
+AI_PASSPORT_ARCHS="$(uname -m)" \
+  "$SCRIPT_DIR/build-app.sh"
+
+if [[ -e "$PASSPORT_APP" ]]; then
+  [[ ${PASSPORT_APP:t} == "AI Passport.app" ]] || { print -u2 "Unsafe app path"; exit 2; }
+  rm -rf -- "$PASSPORT_APP"
 fi
-"$SUPPORT_DIR/venv/bin/python" -m pip install --disable-pip-version-check \
-  -r "$SUPPORT_DIR/bridge/requirements.txt"
+ditto --norsrc --noextattr --noacl "$BUILD_OUTPUT/AI Passport.app" "$PASSPORT_APP"
 
-xcrun swiftc -parse-as-library -O "$SCRIPT_DIR/statusbar/mac_status_bar.swift" \
-  -o "$STATUS_APP/Contents/MacOS/AI Passport Status" \
-  -framework AppKit -framework CoreAudio
-cp "$SCRIPT_DIR/statusbar/Info.plist" "$STATUS_APP/Contents/Info.plist"
-
-render_plist() {
-  local template=$1
-  local destination=$2
-  TEMPLATE_PATH=$template DESTINATION_PATH=$destination \
-    SUPPORT_VALUE=$SUPPORT_DIR STATUS_VALUE=$STATUS_APP LOG_VALUE=$LOG_DIR \
-    python3 - <<'PY'
-import html
-import os
-from pathlib import Path
-
-text = Path(os.environ["TEMPLATE_PATH"]).read_text(encoding="utf-8")
-values = {
-    "@SUPPORT_DIR@": os.environ["SUPPORT_VALUE"],
-    "@STATUS_APP@": os.environ["STATUS_VALUE"],
-    "@LOG_DIR@": os.environ["LOG_VALUE"],
-}
-for marker, value in values.items():
-    text = text.replace(marker, html.escape(value))
-Path(os.environ["DESTINATION_PATH"]).write_text(text, encoding="utf-8")
-PY
-}
-
-BRIDGE_PLIST="$LAUNCH_DIR/com.aipassport.bridge.plist"
-STATUS_PLIST="$LAUNCH_DIR/com.aipassport.status.plist"
-render_plist "$SCRIPT_DIR/launchagents/com.aipassport.bridge.plist.template" "$BRIDGE_PLIST"
-render_plist "$SCRIPT_DIR/launchagents/com.aipassport.status.plist.template" "$STATUS_PLIST"
-plutil -lint "$BRIDGE_PLIST" "$STATUS_PLIST" >/dev/null
-
-"$SUPPORT_DIR/venv/bin/python" "$SUPPORT_DIR/bridge/mac_shortcut_bridge.py" \
-  --config "$SUPPORT_DIR/config.json" --self-test
-
-if (( LEGACY_BRIDGE )) && [[ -f "$SUPPORT_DIR/mac_shortcut_bridge.py" ]]; then
-  LEGACY_BACKUP_DIR="$SUPPORT_DIR/legacy"
-  safe_named_path "legacy backup directory" "$LEGACY_BACKUP_DIR" "legacy"
-  mkdir -p "$LEGACY_BACKUP_DIR"
-  if [[ ! -e "$LEGACY_BACKUP_DIR/mac_shortcut_bridge.py" ]]; then
-    mv "$SUPPORT_DIR/mac_shortcut_bridge.py" \
-      "$LEGACY_BACKUP_DIR/mac_shortcut_bridge.py"
-    print "Moved the legacy Bridge entry point to $LEGACY_BACKUP_DIR."
-  fi
-fi
-
-if (( ! SKIP_START )); then
-  DOMAIN="gui/$(id -u)"
-
-  bootstrap_agent() {
-    local label=$1
-    local plist=$2
-    local attempt
-    for attempt in 1 2 3 4; do
-      if launchctl bootstrap "$DOMAIN" "$plist"; then
-        return 0
-      fi
-      if (( attempt == 4 )); then
-        print -u2 "Unable to register LaunchAgent after waiting for macOS: $label"
-        return 1
-      fi
-      print "Retrying LaunchAgent registration after macOS finishes unloading $label..."
-      sleep "$attempt"
-    done
-  }
-
+# Stop the retired two-process installation after the replacement is ready.
+DOMAIN="gui/$(id -u)"
+if [[ "$LAUNCH_DIR" == "${HOME:A}/Library/LaunchAgents" ]]; then
   launchctl bootout "$DOMAIN/com.aipassport.bridge" 2>/dev/null || true
   launchctl bootout "$DOMAIN/com.aipassport.status" 2>/dev/null || true
-  bootstrap_agent "com.aipassport.bridge" "$BRIDGE_PLIST"
-  bootstrap_agent "com.aipassport.status" "$STATUS_PLIST"
-  launchctl enable "$DOMAIN/com.aipassport.bridge"
-  launchctl enable "$DOMAIN/com.aipassport.status"
-  launchctl kickstart -k "$DOMAIN/com.aipassport.bridge"
-  launchctl kickstart -k "$DOMAIN/com.aipassport.status"
+fi
+rm -f -- "$LAUNCH_DIR/com.aipassport.bridge.plist" \
+  "$LAUNCH_DIR/com.aipassport.status.plist"
+
+if (( ! SKIP_START )); then
+  open "$PASSPORT_APP"
 fi
 
 print "Installation complete. Pair AI Passport in System Settings > Bluetooth."
-print "Run ./host/macos/doctor.sh to verify the host after pairing."
+print "The menu-bar app now contains the BLE and audio Bridge itself."

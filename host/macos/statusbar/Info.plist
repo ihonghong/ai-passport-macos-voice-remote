@@ -5,15 +5,15 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>zh_CN</string>
     <key>CFBundleDisplayName</key>
-    <string>AI Passport Status</string>
+    <string>AI Passport</string>
     <key>CFBundleExecutable</key>
-    <string>AI Passport Status</string>
+    <string>AI Passport</string>
     <key>CFBundleIdentifier</key>
-    <string>com.aipassport.status</string>
+    <string>com.aipassport.app</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>AI Passport Status</string>
+    <string>AI Passport</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -24,5 +24,7 @@
     <string>13.0</string>
     <key>LSUIElement</key>
     <true/>
+    <key>NSHumanReadableCopyright</key>
+    <string>Open-source AI Passport contributors</string>
 </dict>
 </plist>

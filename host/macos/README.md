@@ -5,36 +5,43 @@
 # macOS Host
 
 The macOS host turns AI Passport into a wireless push-to-talk remote and
-microphone for dictation. It contains the Python audio bridge, the menu-bar
-status application, LaunchAgent templates, configuration, and repeatable
-install, diagnostic, and uninstall scripts.
+microphone for dictation. The native menu-bar application contains the BLE HID
+Bridge, PCM conversion, Core Audio output, input-device policy, shortcut
+configuration, and optional metrics. Python is not a runtime dependency.
 
 ## What runs on the Mac
 
 ```text
 AI Passport BLE HID
-  ├─ keyboard reports ───────────────> macOS shortcuts / Return / Command-Delete
-  ├─ microphone reports -> bridge ───> BlackHole 2ch -> dictation application
-  └─ status reports <--- provider ──── quota, daily tokens, date/time, audio readiness
+  ├─ keyboard reports ─────────────────> macOS shortcuts / Return / Command-Delete
+  ├─ microphone reports -> native App ─> BlackHole 2ch -> dictation application
+  └─ status reports <--- native App ──── quota, daily tokens, date/time, audio readiness
 ```
 
-The device remains paired as one Bluetooth HID device. The Python bridge is a
-background process because macOS applications need a local component to turn
-the custom BLE audio reports into a CoreAudio input stream. BlackHole provides
-that virtual input. The menu-bar application shows status and switches between
-AI Passport input and the previously selected physical microphone.
+The device remains paired as one Bluetooth HID device. One native Swift process
+receives its vendor audio reports through IOKit and writes converted 48 kHz
+stereo PCM through Core Audio. BlackHole remains the only external runtime
+dependency because a normal app cannot register itself as a system microphone
+driver. The app also switches between AI Passport input and the previously
+selected physical microphone.
 
 ## Requirements
 
 - macOS with Bluetooth LE
-- Python 3.9 or newer
-- Xcode Command Line Tools (`xcode-select --install`)
-- Homebrew when the installer needs to install BlackHole
+- BlackHole 2ch (Homebrew is one installation option)
 - an AI Passport running this repository's shortcut firmware
+
+The downloadable universal App supports Apple silicon and Intel Macs. Xcode
+Command Line Tools are required only when building the App from source.
 
 ## Install
 
-Clone the repository and run:
+For a release, download `AI-Passport-macOS.zip`, move `AI Passport.app` into
+Applications, and open it. The ad-hoc CI artifact may require **Open** from the
+Finder context menu; a zero-warning public download requires a Developer ID
+signature and Apple notarization.
+
+To build and install from a clone, run:
 
 ```bash
 ./host/macos/install.sh --dry-run
@@ -49,15 +56,14 @@ verify the installation:
 ./host/macos/doctor.sh
 ```
 
-The installer creates only user-owned files:
+The source installer creates only user-owned files:
 
 - `~/Library/Application Support/AI Passport Bridge/`
-- `~/Applications/AI Passport Status.app`
-- `~/Library/LaunchAgents/com.aipassport.bridge.plist`
-- `~/Library/LaunchAgents/com.aipassport.status.plist`
+- `~/Applications/AI Passport.app`
 
-It preserves an existing `config.json` during upgrades. It does not flash the
-device, erase Bluetooth pairing, or uninstall BlackHole.
+It preserves an existing `config.json`, retires the old Python/LaunchAgent
+runtime, and lets the App register itself as a macOS login item. It does not
+flash the device, erase Bluetooth pairing, or uninstall BlackHole.
 
 ## Configure the voice shortcut
 
@@ -84,8 +90,9 @@ automatic resume until **AI Passport input** is selected again.
 
 ## Configuration
 
-Edit `~/Library/Application Support/AI Passport Bridge/config.json`, then choose
-**Restart audio bridge** from the menu-bar item:
+Choose **Open configuration file** from the menu-bar item, edit it, then choose
+**Restart audio bridge**. The file lives at
+`~/Library/Application Support/AI Passport Bridge/config.json`:
 
 ```json
 {
@@ -113,14 +120,15 @@ Named keys are `return`, `escape`, `delete`, and `space`; a USB HID usage from
 required for every action. Restart the Bridge after editing, and configure the
 dictation application to use the same voice chord.
 
-Metrics are disabled by default. Set `provider.name` to `codex`, `auto`, or a
-fully qualified Python module to opt in. The Codex Provider reads rate limits
+Metrics are disabled by default. Set `provider.name` to `codex` or `auto` to opt
+in. The native Codex Provider reads rate limits
 from the local Codex CLI and token-count events from local `~/.codex` session
 records; it does not upload those records. Provider polling is periodic and does
 not keep a separate Bluetooth connection open; status values ride on the
-existing HID connection. See [provider plugins](bridge/providers/README.md).
+existing HID connection. The old Python Bridge remains in the repository as a
+diagnostic and migration reference; the installed App does not load it.
 
-Run the bridge manually only for diagnosis:
+Run the legacy Bridge manually only when comparing behavior during diagnosis:
 
 ```bash
 python3 host/macos/bridge/mac_shortcut_bridge.py --self-test
@@ -152,8 +160,8 @@ an existing bonded reconnect does not show another code.
 ./host/macos/uninstall.sh
 ```
 
-This removes the host service, menu-bar app, and its local configuration. It
-leaves BlackHole, logs, Bluetooth pairing, and device firmware intact.
+This unregisters the login item and removes the native App and its local
+configuration. It leaves BlackHole, Bluetooth pairing, and device firmware intact.
 
 ## Agent-friendly setup
 

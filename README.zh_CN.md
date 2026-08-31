@@ -11,7 +11,7 @@
 - 屏幕显示日期时间、电量、连接状态、可选 AI 用量和可选宠物；
 - 键盘与 8 kHz 单声道麦克风共用一次加密 BLE HID 配对。
 
-仓库同时包含 ESP32-C3 固件和 macOS Bridge／菜单栏应用。指标来源与屏幕宠物
+仓库同时包含 ESP32-C3 固件，以及已经内置 Bridge 的原生 macOS 菜单栏 App。指标来源与屏幕宠物
 都是可替换的可选插件；公开克隆不依赖 Codex，也不依赖私人素材。
 仓库保留原始 [FoloToy AI Passport](https://github.com/FoloToy/ai-passport) 历史与 MIT
 署名，并独立维护当前产品版本。
@@ -45,8 +45,11 @@ AI Passport，请使用永久 Recovery 和官方小程序安装：上电时按�
 
 ## macOS 快速开始
 
-需要 macOS、Homebrew、Python 3、Xcode Command Line Tools，以及已经运行兼容
-固件的 AI Passport。
+普通用户从 Release 下载 `AI-Passport-macOS.zip`，把 `AI Passport.app` 移到
+“应用程序”并打开即可。它是通用原生程序，不捆绑也不依赖 Python。只需安装一次
+BlackHole 2ch，再配对已经运行兼容固件的 AI Passport。
+
+如果要从源码构建同一个 App（需要 Xcode Command Line Tools）：
 
 ```bash
 git clone https://github.com/ihonghong/ai-passport-macos-voice-remote.git
@@ -56,7 +59,7 @@ cd ai-passport-macos-voice-remote
 ./host/macos/doctor.sh
 ```
 
-安装脚本只安装 Mac 主机端，**不会**刷写开发板、擦除设备身份数据或重置蓝牙配对。
+安装脚本会构建一个原生 App，并且只安装 Mac 主机端，**不会**刷写开发板、擦除设备身份数据或重置蓝牙配对。
 如果脚本刚安装 BlackHole，请重启 macOS 后再次运行安装脚本，然后在“系统设置 >
 蓝牙”中配对 `AI Passport`。
 
@@ -74,8 +77,8 @@ Provider。指标默认关闭。可选的 Codex Provider 会通过本地 Codex C
 
 ## 可选插件
 
-- [指标 Provider](host/macos/bridge/providers/README.zh_CN.md)：内置 `codex`、`none`、
-  自动选择，也可以接入自定义 Python 模块。
+- 指标 Provider：原生 App 支持 `codex`、`auto` 和不读取私人数据的默认 `none`；
+  旧 Python 适配器仅保留为插件参考。
 - [宠物插件](main/plugins/pets/README.zh_CN.md)：可以不带宠物、接入可再分发的自定义
   宠物，或在本地素材存在时使用所有者自己的宠物。
 

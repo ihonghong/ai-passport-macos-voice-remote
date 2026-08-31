@@ -4,34 +4,40 @@
 
 # macOS 主机端
 
-macOS 主机端把 AI Passport 变成无线按住说话遥控器和听写麦克风。本目录完整包含
-Python 音频桥、菜单栏状态应用、LaunchAgent 模板、配置和可重复执行的安装、诊断、
-卸载脚本。
+macOS 主机端把 AI Passport 变成无线按住说话遥控器和听写麦克风。原生菜单栏 App
+已经内置 BLE HID Bridge、PCM 转换、Core Audio 输出、输入设备策略、快捷键配置与
+可选用量指标；运行时不再依赖 Python。
 
 ## Mac 上运行什么
 
 ```text
 AI Passport BLE HID
-  ├─ 键盘报告 ─────────────────────> macOS 快捷键 / 回车 / Command-Delete
-  ├─ 麦克风报告 -> Bridge ─────────> BlackHole 2ch -> 听写应用
-  └─ 状态报告 <--- Provider ──────── 剩余额度、今日 Token、日期时间、音频状态
+  ├─ 键盘报告 ───────────────────────> macOS 快捷键 / 回车 / Command-Delete
+  ├─ 麦克风报告 -> 原生 App ─────────> BlackHole 2ch -> 听写应用
+  └─ 状态报告 <--- 原生 App ────────── 剩余额度、今日 Token、日期时间、音频状态
 ```
 
-设备只需作为一个 Bluetooth HID 设备配对。macOS 应用无法直接把自定义 BLE 音频
-报告当作 CoreAudio 输入，所以必须由一个本地常驻进程转换；BlackHole 提供虚拟输入。
-菜单栏应用负责显示状态，并在 AI Passport 输入和上一次物理麦克风之间切换。
+设备只需作为一个 Bluetooth HID 设备配对。一个原生 Swift 进程通过 IOKit 接收音频
+报告，并通过 Core Audio 输出转换后的 48 kHz 双声道 PCM。BlackHole 仍是唯一外部
+运行依赖，因为普通 App 不能自行注册成系统麦克风驱动。菜单栏 App 还负责显示状态，
+并在 AI Passport 输入和上一次物理麦克风之间切换。
 
 ## 环境要求
 
 - 支持 Bluetooth LE 的 macOS
-- Python 3.9 或更新版本
-- Xcode Command Line Tools（`xcode-select --install`）
-- 安装器需要安装 BlackHole 时使用 Homebrew
+- BlackHole 2ch（Homebrew 是一种安装方式）
 - 已运行本仓库快捷键固件的 AI Passport
+
+Release 中的通用 App 同时支持 Apple 芯片和 Intel Mac。只有从源码构建时才需要
+Xcode Command Line Tools。
 
 ## 安装
 
-克隆仓库后运行：
+普通用户可从 Release 下载 `AI-Passport-macOS.zip`，把 `AI Passport.app` 移入
+“应用程序”后打开。CI 生成的临时签名版本可能需要在访达中右键选择“打开”；若希望
+下载后完全没有 Gatekeeper 提示，Release 还需要 Developer ID 签名和 Apple 公证。
+
+从源码构建安装时运行：
 
 ```bash
 ./host/macos/install.sh --dry-run
@@ -48,11 +54,10 @@ AI Passport BLE HID
 安装器只创建当前用户拥有的文件：
 
 - `~/Library/Application Support/AI Passport Bridge/`
-- `~/Applications/AI Passport Status.app`
-- `~/Library/LaunchAgents/com.aipassport.bridge.plist`
-- `~/Library/LaunchAgents/com.aipassport.status.plist`
+- `~/Applications/AI Passport.app`
 
-升级时会保留已有 `config.json`，不会刷写设备、清除蓝牙配对或卸载 BlackHole。
+升级时会保留已有 `config.json`，停用旧的 Python／LaunchAgent 运行方式，并由 App
+注册 macOS 登录项；不会刷写设备、清除蓝牙配对或卸载 BlackHole。
 
 ## 配置语音快捷键
 
@@ -73,8 +78,8 @@ Bridge 停止、报错或等待设备，状态栏应用会临时恢复上一次�
 
 ## 配置
 
-编辑 `~/Library/Application Support/AI Passport Bridge/config.json`，然后从菜单栏
-选择“重新启动音频桥”：
+从菜单栏选择“打开配置文件”，编辑后再选择“重新启动音频桥”。文件位于
+`~/Library/Application Support/AI Passport Bridge/config.json`：
 
 ```json
 {
@@ -99,12 +104,13 @@ Bridge 连接后会通过现有 HID Output Report 一次发送完整快捷键映
 `space`，也可以填写 `0` 至 `101` 的 USB HID usage 整数。每个动作至少需要一个修饰键
 或普通键。编辑后重新启动 Bridge，并把听写应用设置为相同的语音组合键。
 
-指标默认关闭。需要时可把 `provider.name` 改为 `codex`、`auto` 或完整 Python 模块名。
-Codex Provider 会通过本地 Codex CLI 读取额度，并从本机 `~/.codex` 会话记录读取 Token
-计数事件；这些记录不会上传。Provider 只定期轮询，不会额外维持一条蓝牙连接；状态数据复用现有 HID 连接发送。详见
-[Provider 插件](bridge/providers/README.zh_CN.md)。
+指标默认关闭。需要时可把 `provider.name` 改为 `codex` 或 `auto`。原生 Codex
+Provider 会通过本地 Codex CLI 读取额度，并从本机 `~/.codex` 会话记录读取 Token
+计数事件；这些记录不会上传。Provider 只定期轮询，不会额外维持一条蓝牙连接；状态
+数据复用现有 HID 连接发送。旧 Python Bridge 仍保留在仓库中，仅作为诊断与迁移参考；安装后的
+App 不会加载它。
 
-仅在诊断时手动运行 Bridge：
+仅在对比排障时手动运行旧 Bridge：
 
 ```bash
 python3 host/macos/bridge/mac_shortcut_bridge.py --self-test
@@ -132,7 +138,7 @@ macOS 蓝牙提示框中输入该数字。加密成功或连接断开后配对�
 ./host/macos/uninstall.sh
 ```
 
-该命令移除主机服务、菜单栏应用和本地配置，但保留 BlackHole、日志、蓝牙配对和设备固件。
+该命令注销登录项并移除原生 App 和本地配置，但保留 BlackHole、蓝牙配对和设备固件。
 
 ## 让 Agent 直接安装
 

@@ -2,13 +2,7 @@ import AppKit
 import CoreAudio
 import Darwin
 import Foundation
-
-private struct BridgeStatus: Decodable {
-    let state: String
-    let detail: String
-    let pid: Int32
-    let updated_at: Double
-}
+import ServiceManagement
 
 private struct BridgeConfig: Decodable {
     let audio_device: String?
@@ -193,12 +187,9 @@ private final class AudioInputManager {
 
 @MainActor
 private final class StatusAppDelegate: NSObject, NSApplicationDelegate {
-    private let statusPath = NSString(
-        string: "~/Library/Application Support/AI Passport Bridge/status.json"
-    ).expandingTildeInPath
-    private let logPath = NSString(
-        string: "~/Library/Logs/AI Passport Bridge.log"
-    ).expandingTildeInPath
+    private let configURL = URL(fileURLWithPath: NSString(
+        string: "~/Library/Application Support/AI Passport Bridge/config.json"
+    ).expandingTildeInPath)
     private let statusItem = NSStatusBar.system.statusItem(
         withLength: NSStatusItem.squareLength
     )
@@ -219,6 +210,11 @@ private final class StatusAppDelegate: NSObject, NSApplicationDelegate {
         action: #selector(toggleBridge),
         keyEquivalent: ""
     )
+    private let loginItem = NSMenuItem(
+        title: "登录时自动启动",
+        action: #selector(toggleLoginItem),
+        keyEquivalent: ""
+    )
     private let audioInputs = AudioInputManager()
     private let resumePassportInputKey = "resumePassportInputWhenConnected"
     private let inputPolicyInitializedKey = "connectionInputPolicyInitialized"
@@ -226,6 +222,7 @@ private final class StatusAppDelegate: NSObject, NSApplicationDelegate {
     private var deviceIsConnected = false
     private var connectionStateIsKnown = false
     private var timer: Timer?
+    private var nativeBridge: NativeBridge?
 
     private var resumePassportInputWhenConnected: Bool {
         get { UserDefaults.standard.bool(forKey: resumePassportInputKey) }
@@ -261,14 +258,17 @@ private final class StatusAppDelegate: NSObject, NSApplicationDelegate {
         bridgeToggleItem.target = self
         bridgeToggleItem.isEnabled = true
         menu.addItem(bridgeToggleItem)
+        loginItem.target = self
+        loginItem.isEnabled = true
+        menu.addItem(loginItem)
 
-        let openLog = NSMenuItem(
-            title: "打开运行日志",
-            action: #selector(openLogFile),
+        let openConfig = NSMenuItem(
+            title: "打开配置文件",
+            action: #selector(openConfigFile),
             keyEquivalent: ""
         )
-        openLog.target = self
-        openLog.isEnabled = true
+        openConfig.target = self
+        openConfig.isEnabled = true
 
         let restart = NSMenuItem(
             title: "重新启动音频桥",
@@ -278,10 +278,26 @@ private final class StatusAppDelegate: NSObject, NSApplicationDelegate {
         restart.target = self
         restart.isEnabled = true
         menu.addItem(restart)
-        menu.addItem(openLog)
+        menu.addItem(openConfig)
+        menu.addItem(.separator())
+        let quit = NSMenuItem(
+            title: "退出 AI Passport",
+            action: #selector(quitApp),
+            keyEquivalent: "q"
+        )
+        quit.target = self
+        quit.isEnabled = true
+        menu.addItem(quit)
         statusItem.menu = menu
 
-        refreshStatus()
+        refreshLoginItem()
+        if !UserDefaults.standard.bool(forKey: "didRequestLoginItem") {
+            try? SMAppService.mainApp.register()
+            UserDefaults.standard.set(true, forKey: "didRequestLoginItem")
+            refreshLoginItem()
+        }
+
+        startNativeBridge(reloadConfiguration: true)
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) {
             [weak self] _ in
             MainActor.assumeIsolated {
@@ -328,98 +344,90 @@ private final class StatusAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func refreshStatus() {
-        func refreshModeItems() {
-            passportModeItem.state = audioInputs.passportModeEnabled ? .on : .off
-            meetingModeItem.state = audioInputs.passportModeEnabled ? .off : .on
-        }
+        bridgeIsAlive = nativeBridge?.isRunning == true
+        bridgeToggleItem.title = bridgeIsAlive ? "关闭音频桥" : "开启音频桥"
+        refreshModeItems()
+    }
 
-        func applyInputPolicy(connected: Bool) {
-            let justConnected = !connectionStateIsKnown || connected != deviceIsConnected
-            deviceIsConnected = connected
-            connectionStateIsKnown = true
+    private func refreshModeItems() {
+        passportModeItem.state = audioInputs.passportModeEnabled ? .on : .off
+        meetingModeItem.state = audioInputs.passportModeEnabled ? .off : .on
+    }
 
-            if connected {
-                if justConnected && resumePassportInputWhenConnected &&
-                    !audioInputs.passportModeEnabled {
-                    _ = audioInputs.selectPassportMode()
-                }
-            } else if audioInputs.passportModeEnabled {
-                // BlackHole remains available even when the board is offline.
-                // Restore the last physical microphone so other applications
-                // do not silently keep recording from an empty virtual input.
-                _ = audioInputs.selectMeetingMode()
+    private func applyInputPolicy(connected: Bool) {
+        let justConnected = !connectionStateIsKnown || connected != deviceIsConnected
+        deviceIsConnected = connected
+        connectionStateIsKnown = true
+
+        if connected {
+            if justConnected && resumePassportInputWhenConnected &&
+                !audioInputs.passportModeEnabled {
+                _ = audioInputs.selectPassportMode()
             }
-            refreshModeItems()
+        } else if audioInputs.passportModeEnabled {
+            // BlackHole remains available even when the board is offline.
+            // Restore the last physical microphone so other applications do
+            // not silently keep recording from an empty virtual input.
+            _ = audioInputs.selectMeetingMode()
         }
+        refreshModeItems()
+    }
 
-        guard let data = FileManager.default.contents(atPath: statusPath),
-              let status = try? JSONDecoder().decode(BridgeStatus.self, from: data)
-        else {
-            bridgeIsAlive = false
-            applyInputPolicy(connected: false)
-            stateItem.title = "AI Passport：状态未知"
-            detailItem.title = "尚未收到桥接状态"
-            setIcon(statusColor: .secondaryLabelColor, tooltip: "AI Passport 状态未知")
-            return
-        }
-
-        let processAlive = kill(status.pid, 0) == 0 || errno == EPERM
-        bridgeIsAlive = processAlive
-        bridgeToggleItem.title = processAlive ? "关闭音频桥" : "开启音频桥"
-        if !processAlive {
-            applyInputPolicy(connected: false)
-            stateItem.title = "AI Passport：桥接未运行"
-            detailItem.title = "launchd 正在尝试恢复"
-            setIcon(statusColor: .systemOrange, tooltip: "AI Passport 桥接未运行")
-            return
-        }
-
-        switch status.state {
-        case "connected":
+    private func applyNativeState(_ state: NativeBridgeState) {
+        bridgeIsAlive = nativeBridge?.isRunning == true
+        bridgeToggleItem.title = bridgeIsAlive ? "关闭音频桥" : "开启音频桥"
+        switch state {
+        case .connected(let detail):
             applyInputPolicy(connected: true)
             stateItem.title = "AI Passport：已连接"
-            detailItem.title = status.detail
+            detailItem.title = detail
             setIcon(statusColor: .systemGreen, tooltip: "AI Passport 已连接")
-        case "recording":
+        case .recording(let detail):
             applyInputPolicy(connected: true)
             stateItem.title = "AI Passport：正在录音"
-            detailItem.title = status.detail
+            detailItem.title = detail
             setIcon(statusColor: .systemRed, tooltip: "AI Passport 正在录音")
-        case "waiting":
+        case .waiting(let detail):
             applyInputPolicy(connected: false)
             stateItem.title = "AI Passport：等待设备"
-            detailItem.title = status.detail
+            detailItem.title = detail
             setIcon(statusColor: .secondaryLabelColor, tooltip: "AI Passport 等待设备")
-        case "error":
+        case .error(let detail):
             applyInputPolicy(connected: false)
             stateItem.title = "AI Passport：桥接错误"
-            detailItem.title = status.detail
+            detailItem.title = detail
             setIcon(statusColor: .systemOrange, tooltip: "AI Passport 桥接错误")
-        default:
+        case .stopped:
             applyInputPolicy(connected: false)
             stateItem.title = "AI Passport：已停止"
-            detailItem.title = status.detail
+            detailItem.title = "音频桥已关闭"
             setIcon(statusColor: .secondaryLabelColor, tooltip: "AI Passport 已停止")
         }
     }
 
-    @objc private func openLogFile() {
-        NSWorkspace.shared.open(URL(fileURLWithPath: logPath))
+    @objc private func openConfigFile() {
+        if !FileManager.default.fileExists(atPath: configURL.path) {
+            do {
+                try FileManager.default.createDirectory(
+                    at: configURL.deletingLastPathComponent(),
+                    withIntermediateDirectories: true
+                )
+                if let example = Bundle.main.url(
+                    forResource: "config.example", withExtension: "json"
+                ) {
+                    try FileManager.default.copyItem(at: example, to: configURL)
+                }
+            } catch {
+                stateItem.title = "AI Passport：无法创建配置"
+                detailItem.title = error.localizedDescription
+                return
+            }
+        }
+        NSWorkspace.shared.open(configURL)
     }
 
     @objc private func restartBridge() {
-        if !bridgeIsAlive {
-            startBridge()
-            return
-        }
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/launchctl")
-        process.arguments = [
-            "kickstart", "-k", "gui/\(getuid())/com.aipassport.bridge"
-        ]
-        try? process.run()
-        stateItem.title = "AI Passport：正在重启…"
-        detailItem.title = "请稍候"
+        startNativeBridge(reloadConfiguration: true)
     }
 
     @objc private func selectPassportMode() {
@@ -443,37 +451,52 @@ private final class StatusAppDelegate: NSObject, NSApplicationDelegate {
         refreshStatus()
     }
 
-    private func runLaunchctl(_ arguments: [String]) -> Int32 {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/launchctl")
-        process.arguments = arguments
-        do {
-            try process.run()
-            process.waitUntilExit()
-            return process.terminationStatus
-        } catch {
-            return -1
-        }
+    private func refreshLoginItem() {
+        loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
     }
 
-    private func startBridge() {
-        let domain = "gui/\(getuid())"
-        _ = runLaunchctl(["enable", "\(domain)/com.aipassport.bridge"])
-        let plist = NSString(
-            string: "~/Library/LaunchAgents/com.aipassport.bridge.plist"
-        ).expandingTildeInPath
-        _ = runLaunchctl(["bootstrap", domain, plist])
-        _ = runLaunchctl(["kickstart", "-k", "\(domain)/com.aipassport.bridge"])
+    @objc private func toggleLoginItem() {
+        do {
+            if SMAppService.mainApp.status == .enabled {
+                try SMAppService.mainApp.unregister()
+            } else {
+                try SMAppService.mainApp.register()
+            }
+        } catch {
+            stateItem.title = "AI Passport：启动项设置失败"
+            detailItem.title = error.localizedDescription
+        }
+        refreshLoginItem()
+    }
+
+    @objc private func quitApp() {
+        nativeBridge?.stop()
+        NSApp.terminate(nil)
+    }
+
+    private func startNativeBridge(reloadConfiguration: Bool) {
+        if reloadConfiguration || nativeBridge == nil {
+            nativeBridge?.stop()
+            do {
+                let bridge = NativeBridge(
+                    configuration: try AppConfiguration.load(from: configURL)
+                )
+                bridge.onStateChange = { [weak self] state in
+                    self?.applyNativeState(state)
+                }
+                nativeBridge = bridge
+            } catch {
+                nativeBridge = nil
+                applyNativeState(.error(error.localizedDescription))
+                return
+            }
+        }
+        nativeBridge?.start()
     }
 
     @objc private func toggleBridge() {
-        let domain = "gui/\(getuid())"
-        if bridgeIsAlive {
-            _ = runLaunchctl(["bootout", "\(domain)/com.aipassport.bridge"])
-        } else {
-            startBridge()
-        }
-        refreshStatus()
+        if nativeBridge?.isRunning == true { nativeBridge?.stop() }
+        else { startNativeBridge(reloadConfiguration: true) }
     }
 }
 
@@ -483,6 +506,23 @@ private struct PassportStatusApp {
     static func main() {
         if CommandLine.arguments.contains("--print-default-input") {
             print(AudioInputManager().defaultInputName ?? "unknown")
+            return
+        }
+        if CommandLine.arguments.contains("--unregister-login-item") {
+            try? SMAppService.mainApp.unregister()
+            return
+        }
+        if let option = CommandLine.arguments.firstIndex(of: "--validate-config"),
+           CommandLine.arguments.indices.contains(option + 1) {
+            do {
+                _ = try AppConfiguration.load(
+                    from: URL(fileURLWithPath: CommandLine.arguments[option + 1])
+                )
+                print("Configuration: PASS")
+            } catch {
+                FileHandle.standardError.write(Data("Configuration: \(error)\n".utf8))
+                exit(1)
+            }
             return
         }
         let app = NSApplication.shared

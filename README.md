@@ -11,8 +11,8 @@ This fork turns FoloToy AI Passport into a wireless macOS voice-input remote:
 - show date/time, battery, connection state, optional AI usage metrics, and an optional pet;
 - run the keyboard and 8 kHz mono microphone over one encrypted BLE HID pairing.
 
-The repository contains both sides required to use it: ESP32-C3 firmware and the
-macOS Bridge/status-bar app. The metric source and on-screen pet are optional,
+The repository contains both sides required to use it: ESP32-C3 firmware and a
+native macOS menu-bar App with its Bridge built in. The metric source and on-screen pet are optional,
 replaceable plugins; a public clone does not require Codex or private artwork.
 It preserves the original [FoloToy AI Passport](https://github.com/FoloToy/ai-passport)
 history and MIT attribution while maintaining this product independently.
@@ -50,8 +50,12 @@ recovery safety](docs/development/ble-recovery-compatibility.md).
 
 ## Quick start on macOS
 
-Requirements: macOS, Homebrew, Python 3, Xcode Command Line Tools, and an AI
-Passport already running compatible firmware.
+For normal use, download `AI-Passport-macOS.zip` from a Release, move
+`AI Passport.app` into Applications, and open it. The App is a universal native
+binary and does not bundle or require Python. Install BlackHole 2ch once, then
+pair an AI Passport already running compatible firmware.
+
+To build the same App from a clone (Xcode Command Line Tools required):
 
 ```bash
 git clone https://github.com/ihonghong/ai-passport-macos-voice-remote.git
@@ -61,7 +65,7 @@ cd ai-passport-macos-voice-remote
 ./host/macos/doctor.sh
 ```
 
-The installer adds the Mac host only. It does **not** flash the board, erase its
+The installer builds one native App and adds the Mac host only. It does **not** flash the board, erase its
 identity data, or reset Bluetooth pairing. If BlackHole is newly installed, restart
 macOS and rerun the installer. Then pair `AI Passport` in System Settings > Bluetooth.
 
@@ -85,8 +89,8 @@ repository layout.
 
 ## Optional plugins
 
-- [Metric Providers](host/macos/bridge/providers/README.md): bundled `codex`, `none`,
-  automatic selection, or a custom Python module.
+- Metric Providers: the native App supports `codex`, `auto`, and the private-data-free
+  `none` default; the legacy Python adapter remains as a plugin reference.
 - [Pet plugins](main/plugins/pets/README.md): build with no pet, a redistributable
   custom pet, or owner-local pet assets when present.
 
