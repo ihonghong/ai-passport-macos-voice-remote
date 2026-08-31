@@ -28,7 +28,13 @@ struct ShortcutChord: Decodable, Equatable {
     }
 }
 
-struct ShortcutConfiguration: Decodable, Equatable {
+struct ButtonConfiguration: Decodable, Equatable {
+    var up: ShortcutChord
+    var down: ShortcutChord
+    var ok: ShortcutChord
+}
+
+private struct LegacyShortcutConfiguration: Decodable {
     var voice: ShortcutChord
     var send: ShortcutChord
     var clear: ShortcutChord
@@ -61,25 +67,59 @@ enum JSONValue: Decodable, Equatable {
 struct AppConfiguration: Decodable, Equatable {
     var deviceName: String
     var audioDevice: String
-    var shortcuts: ShortcutConfiguration
+    var buttons: ButtonConfiguration
     var provider: ProviderConfiguration
 
     enum CodingKeys: String, CodingKey {
         case deviceName = "device_name"
         case audioDevice = "audio_device"
+        case buttons
         case shortcuts
         case provider
+    }
+
+    init(
+        deviceName: String,
+        audioDevice: String,
+        buttons: ButtonConfiguration,
+        provider: ProviderConfiguration
+    ) {
+        self.deviceName = deviceName
+        self.audioDevice = audioDevice
+        self.buttons = buttons
+        self.provider = provider
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        deviceName = try values.decodeIfPresent(String.self, forKey: .deviceName)
+            ?? Self.defaults.deviceName
+        audioDevice = try values.decodeIfPresent(String.self, forKey: .audioDevice)
+            ?? Self.defaults.audioDevice
+        provider = try values.decodeIfPresent(ProviderConfiguration.self, forKey: .provider)
+            ?? Self.defaults.provider
+        if let physical = try values.decodeIfPresent(ButtonConfiguration.self, forKey: .buttons) {
+            buttons = physical
+        } else if let legacy = try values.decodeIfPresent(
+            LegacyShortcutConfiguration.self, forKey: .shortcuts
+        ) {
+            buttons = ButtonConfiguration(
+                up: legacy.clear, down: legacy.voice, ok: legacy.send
+            )
+        } else {
+            buttons = Self.defaults.buttons
+        }
     }
 
     static let defaults = AppConfiguration(
         deviceName: "AI Passport",
         audioDevice: "BlackHole 2ch",
-        shortcuts: ShortcutConfiguration(
-            voice: ShortcutChord(
+        buttons: ButtonConfiguration(
+            up: ShortcutChord(modifiers: ["left_command"], key: .name("delete")),
+            down: ShortcutChord(
                 modifiers: ["left_control", "left_command"], key: .usage(0)
             ),
-            send: ShortcutChord(modifiers: [], key: .name("return")),
-            clear: ShortcutChord(modifiers: ["left_command"], key: .name("delete"))
+            ok: ShortcutChord(modifiers: [], key: .name("return"))
         ),
         provider: ProviderConfiguration(name: "none", settings: [:])
     )
@@ -129,11 +169,11 @@ enum PassportProtocol {
         return crc
     }
 
-    static func encode(_ chord: ShortcutChord, action: String) throws -> (UInt8, UInt8) {
+    static func encode(_ chord: ShortcutChord, button: String) throws -> (UInt8, UInt8) {
         var modifiers: UInt8 = 0
         for name in chord.modifiers {
             guard let value = modifierUsages[name] else {
-                throw BridgeError.invalidConfiguration("Unsupported \(action) modifier: \(name)")
+                throw BridgeError.invalidConfiguration("Unsupported \(button) modifier: \(name)")
             }
             modifiers |= value
         }
@@ -142,22 +182,23 @@ enum PassportProtocol {
         case .usage(let value): key = value
         case .name(let name):
             guard let value = keyUsages[name] else {
-                throw BridgeError.invalidConfiguration("Unsupported \(action) key: \(name)")
+                throw BridgeError.invalidConfiguration("Unsupported \(button) key: \(name)")
             }
             key = value
         }
         guard modifiers != 0 || key != 0 else {
-            throw BridgeError.invalidConfiguration("Shortcut \(action) cannot be empty")
+            throw BridgeError.invalidConfiguration("Button \(button) cannot be empty")
         }
         return (modifiers, key)
     }
 
-    static func keymapPayload(_ shortcuts: ShortcutConfiguration) throws -> Data {
+    static func keymapPayload(_ buttons: ButtonConfiguration) throws -> Data {
         var bytes: [UInt8] = [Character("K").asciiValue!]
+        // Preserve the v1 wire order: DOWN, OK, UP.
         for (name, chord) in [
-            ("voice", shortcuts.voice), ("send", shortcuts.send), ("clear", shortcuts.clear)
+            ("down", buttons.down), ("ok", buttons.ok), ("up", buttons.up)
         ] {
-            let encoded = try encode(chord, action: name)
+            let encoded = try encode(chord, button: name)
             bytes.append(contentsOf: [encoded.0, encoded.1])
         }
         bytes.append(crc8(bytes))

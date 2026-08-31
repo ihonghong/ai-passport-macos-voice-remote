@@ -962,28 +962,28 @@ esp_err_t ble_keyboard_tap_chord(uint8_t modifiers, uint8_t key_code)
     return ble_keyboard_report(0, 0);
 }
 
-static const shortcut_chord_t *shortcut_chord(shortcut_action_t action)
+static const shortcut_chord_t *button_chord(shortcut_button_t button)
 {
-    if (action < 0 || action >= SHORTCUT_ACTION_COUNT) return NULL;
-    return &s_keymap.action[action];
+    if (button < 0 || button >= SHORTCUT_BUTTON_COUNT) return NULL;
+    return &s_keymap.button[button];
 }
 
-esp_err_t ble_keyboard_shortcut_press(shortcut_action_t action)
+esp_err_t ble_keyboard_button_press(shortcut_button_t button)
 {
-    const shortcut_chord_t *chord = shortcut_chord(action);
+    const shortcut_chord_t *chord = button_chord(button);
     return chord ? ble_keyboard_report(chord->modifiers, chord->key_code)
                  : ESP_ERR_INVALID_ARG;
 }
 
-esp_err_t ble_keyboard_shortcut_release(shortcut_action_t action)
+esp_err_t ble_keyboard_button_release(shortcut_button_t button)
 {
-    if (!shortcut_chord(action)) return ESP_ERR_INVALID_ARG;
+    if (!button_chord(button)) return ESP_ERR_INVALID_ARG;
     return ble_keyboard_report(0, 0);
 }
 
-esp_err_t ble_keyboard_shortcut_tap(shortcut_action_t action)
+esp_err_t ble_keyboard_button_tap(shortcut_button_t button)
 {
-    const shortcut_chord_t *chord = shortcut_chord(action);
+    const shortcut_chord_t *chord = button_chord(button);
     return chord ? ble_keyboard_tap_chord(chord->modifiers, chord->key_code)
                  : ESP_ERR_INVALID_ARG;
 }

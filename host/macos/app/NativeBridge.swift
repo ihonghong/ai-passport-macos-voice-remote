@@ -35,7 +35,7 @@ final class NativeBridge {
     func start() {
         guard !isRunning else { return }
         do {
-            _ = try PassportProtocol.keymapPayload(configuration.shortcuts)
+            _ = try PassportProtocol.keymapPayload(configuration.buttons)
             audioSink = try NativeAudioSink(deviceName: configuration.audioDevice)
         } catch {
             publish(.error(error.localizedDescription))
@@ -185,7 +185,7 @@ final class NativeBridge {
 
     private func sendKeymap() throws {
         guard let device else { return }
-        let payload = try PassportProtocol.keymapPayload(configuration.shortcuts)
+        let payload = try PassportProtocol.keymapPayload(configuration.buttons)
         try setOutputReport(device: device, payload: payload)
     }
 

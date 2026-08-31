@@ -27,8 +27,8 @@ typedef enum {
     UI_WAITING = 0,
     UI_READY,
     UI_LISTENING,
-    UI_RETURN_SENT,
-    UI_CLEARED,
+    UI_OK_PRESSED,
+    UI_UP_PRESSED,
 } shortcut_ui_state_t;
 
 typedef enum {
@@ -122,11 +122,6 @@ static TickType_t s_listening_started_at;
 
 #define UI_ANIMATION_MS 140
 #define WAVE_BAR_COUNT 8
-
-// Physical roles live here so ergonomic remapping does not touch behavior.
-#define BUTTON_VOICE BSP_BTN_DOWN
-#define BUTTON_SEND BSP_BTN_OK
-#define BUTTON_CLEAR BSP_BTN_UP
 
 static TickType_t s_backlight_active_until;
 static TickType_t s_backlight_deep_idle_at;
@@ -237,7 +232,7 @@ static void ui_refresh_locked(void)
         "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"
     };
     static const char *const states[] = {
-        "PAIR", "READY", "LISTENING", "SENT", "CLEARED"
+        "PAIR", "READY", "LISTENING", "OK", "UP"
     };
 
     lv_label_set_text(s_time_label, s_time_text);
@@ -449,7 +444,7 @@ static void handle_button(const shortcut_button_event_t *event)
 {
     display_activity();
     if (event->ev == BSP_BTN_PRESS) ble_keyboard_promote_advertising();
-    if (event->btn == BUTTON_VOICE && event->ev == BSP_BTN_PRESS && !s_voice_held) {
+    if (event->btn == BSP_BTN_DOWN && event->ev == BSP_BTN_PRESS && !s_voice_held) {
         if (!audio_transport_ready()) {
             s_ui_state = UI_WAITING;
             ui_refresh();
@@ -458,8 +453,8 @@ static void handle_button(const shortcut_button_event_t *event)
         s_voice_held = true;
         s_listening_started_at = xTaskGetTickCount();
         s_ui_state = UI_LISTENING;
-        esp_err_t err = ble_keyboard_shortcut_press(SHORTCUT_ACTION_VOICE);
-        if (err != ESP_OK) ESP_LOGW("shortcut_app", "Voice key down failed: %s",
+        esp_err_t err = ble_keyboard_button_press(SHORTCUT_BUTTON_DOWN);
+        if (err != ESP_OK) ESP_LOGW("shortcut_app", "DOWN binding press failed: %s",
                                     esp_err_to_name(err));
         // Put the shortcut-down report ahead of AUDIO_START/PCM. The audio
         // task has a higher priority and would otherwise preempt this worker
@@ -470,31 +465,33 @@ static void handle_button(const shortcut_button_event_t *event)
         ui_refresh();
         return;
     }
-    if (event->btn == BUTTON_VOICE && event->ev == BSP_BTN_RELEASE && s_voice_held) {
+    if (event->btn == BSP_BTN_DOWN && event->ev == BSP_BTN_RELEASE && s_voice_held) {
         s_audio_requested = false;
         s_voice_held = false;
         s_ui_state = audio_transport_ready() ? UI_READY : UI_WAITING;
         protocol_write("VOICE,UP");
         ui_refresh();
-        esp_err_t err = ble_keyboard_shortcut_release(SHORTCUT_ACTION_VOICE);
-        if (err != ESP_OK) ESP_LOGW("shortcut_app", "Voice key up failed: %s",
+        esp_err_t err = ble_keyboard_button_release(SHORTCUT_BUTTON_DOWN);
+        if (err != ESP_OK) ESP_LOGW("shortcut_app", "DOWN binding release failed: %s",
                                     esp_err_to_name(err));
         return;
     }
     if (event->ev != BSP_BTN_CLICK) return;
 
-    if (event->btn == BUTTON_SEND) {
-        s_ui_state = UI_RETURN_SENT;
-        esp_err_t err = ble_keyboard_shortcut_tap(SHORTCUT_ACTION_SEND);
-        if (err != ESP_OK) ESP_LOGW("shortcut_app", "Return failed: %s",
+    if (event->btn == BSP_BTN_OK) {
+        s_ui_state = UI_OK_PRESSED;
+        esp_err_t err = ble_keyboard_button_tap(SHORTCUT_BUTTON_OK);
+        if (err != ESP_OK) ESP_LOGW("shortcut_app", "OK binding failed: %s",
                                     esp_err_to_name(err));
+        // Retain the legacy USB diagnostic event; BLE uses the physical map.
         protocol_write("KEY,RETURN");
         ui_refresh();
-    } else if (event->btn == BUTTON_CLEAR) {
-        s_ui_state = UI_CLEARED;
-        esp_err_t err = ble_keyboard_shortcut_tap(SHORTCUT_ACTION_CLEAR);
-        if (err != ESP_OK) ESP_LOGW("shortcut_app", "Clear failed: %s",
+    } else if (event->btn == BSP_BTN_UP) {
+        s_ui_state = UI_UP_PRESSED;
+        esp_err_t err = ble_keyboard_button_tap(SHORTCUT_BUTTON_UP);
+        if (err != ESP_OK) ESP_LOGW("shortcut_app", "UP binding failed: %s",
                                     esp_err_to_name(err));
+        // Retain the legacy USB diagnostic event; BLE uses the physical map.
         protocol_write("KEY,CLEAR");
         ui_refresh();
     }
@@ -590,7 +587,7 @@ static void shortcut_worker(void *arg)
             voice_state_handled = !voice_state_handled;
             const shortcut_button_event_t voice_event = {
                 .kind = SHORTCUT_EVENT_BUTTON,
-                .btn = BUTTON_VOICE,
+                .btn = BSP_BTN_DOWN,
                 .ev = voice_state_handled ? BSP_BTN_PRESS : BSP_BTN_RELEASE,
             };
             handle_button(&voice_event);
@@ -800,7 +797,7 @@ void shortcut_app_button(bsp_btn_t btn, bsp_btn_ev_t ev, void *user)
     (void)user;
     if (!s_button_queue) return;
 
-    if (btn == BUTTON_VOICE &&
+    if (btn == BSP_BTN_DOWN &&
         (ev == BSP_BTN_PRESS || ev == BSP_BTN_RELEASE)) {
         bool down = ev == BSP_BTN_PRESS;
         if (down != s_voice_button_down) {

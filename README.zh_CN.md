@@ -63,8 +63,9 @@ cd ai-passport-macos-voice-remote
 如果脚本刚安装 BlackHole，请重启 macOS 后再次运行安装脚本，然后在“系统设置 >
 蓝牙”中配对 `AI Passport`。
 
-语音键会按住并发送**左 Control + 左 Command**。用户需要在自己选择的听写应用或输入法
-中，把全局语音快捷键绑定成同一组合；安装器不会自动配置豆包或任何其他输入法。
+主机配置直接绑定实体 `up`、`down`、`ok` 三个按键。默认按住下键时会在传输音频的
+同时持续发送**左 Control + 左 Command**。用户需要在自己的听写应用或输入法中，把
+全局语音快捷键绑定成同一组合；安装器不会自动配置豆包或任何其他输入法。
 
 已有主机配置会被保留。可以编辑
 `~/Library/Application Support/AI Passport Bridge/config.json` 选择音频设备或指标

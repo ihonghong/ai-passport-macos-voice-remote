@@ -15,12 +15,13 @@ The repository is organized around the following principles:
 ## Current shortcut application
 
 This fork currently boots directly into a wireless Mac voice-shortcut remote.
-Its three buttons provide push-to-talk, Return, and Command-Delete; the built-in
-microphone is streamed over BLE HID to the repository's macOS bridge; and the
+Its physical Up, Down, and OK buttons are directly configurable; the defaults
+are Command-Delete, push-to-talk plus a keyboard chord, and Return. The built-in
+microphone is streamed over BLE HID to the repository's macOS bridge, while the
 display shows time, battery, connection state, optional model quota, daily token
 usage, and an optional compile-time pet.
 
-The public firmware voice button defaults to **Left Control + Left Command**.
+The physical Down button defaults to **Left Control + Left Command** while held.
 This is a project mapping rather than a universal macOS or voice-input default;
 each user must manually bind the voice trigger in their dictation application or
 input method to the same combination.

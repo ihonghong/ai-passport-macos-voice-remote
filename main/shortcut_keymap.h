@@ -16,11 +16,12 @@
 #define SHORTCUT_HID_KEY_MAX       0x65
 
 typedef enum {
-    SHORTCUT_ACTION_VOICE = 0,
-    SHORTCUT_ACTION_SEND,
-    SHORTCUT_ACTION_CLEAR,
-    SHORTCUT_ACTION_COUNT,
-} shortcut_action_t;
+    // Keep this wire/storage order compatible with existing keymap_v1 data.
+    SHORTCUT_BUTTON_DOWN = 0,
+    SHORTCUT_BUTTON_OK,
+    SHORTCUT_BUTTON_UP,
+    SHORTCUT_BUTTON_COUNT,
+} shortcut_button_t;
 
 typedef struct {
     uint8_t modifiers;
@@ -28,13 +29,13 @@ typedef struct {
 } shortcut_chord_t;
 
 typedef struct {
-    shortcut_chord_t action[SHORTCUT_ACTION_COUNT];
+    shortcut_chord_t button[SHORTCUT_BUTTON_COUNT];
 } shortcut_keymap_t;
 
 // Return the public defaults used when no valid user configuration exists.
 shortcut_keymap_t shortcut_keymap_default(void);
 
-// Reject empty actions and reserved modifier bits before persisting a map.
+// Reject empty button bindings and invalid HID usages before persisting a map.
 bool shortcut_keymap_valid(const shortcut_keymap_t *keymap);
 
 // Encode/decode the complete map as one atomic eight-byte HID/NVS record.

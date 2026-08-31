@@ -69,12 +69,13 @@ The installer builds one native App and adds the Mac host only. It does **not** 
 identity data, or reset Bluetooth pairing. If BlackHole is newly installed, restart
 macOS and rerun the installer. Then pair `AI Passport` in System Settings > Bluetooth.
 
-**Manual shortcut setup is required.** The public firmware defaults to sending and
-holding **Left Control + Left Command** when the voice button is held. This is an
-AI Passport project default, not a universal macOS, Dictation, or input-method
-default. Each user must configure their preferred voice-input application or input
-method to use **Left Control + Left Command** as its global voice trigger. The
-installer does not configure Doubao, macOS Dictation, or any other input method.
+**Manual shortcut setup is required.** The host configuration binds the physical
+`up`, `down`, and `ok` buttons directly. By default, holding Down sends **Left
+Control + Left Command** while it streams audio. This is an AI Passport project
+default, not a universal macOS, Dictation, or input-method default. Each user
+must configure their preferred voice-input application or input method to use
+the same combination as its global voice trigger. The installer does not
+configure Doubao, macOS Dictation, or any other input method.
 
 Existing host configuration is preserved. Edit
 `~/Library/Application Support/AI Passport Bridge/config.json` to select the audio

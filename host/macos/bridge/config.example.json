@@ -1,18 +1,18 @@
 {
   "device_name": "AI Passport",
   "audio_device": "BlackHole 2ch",
-  "shortcuts": {
-    "voice": {
+  "buttons": {
+    "up": {
+      "modifiers": ["left_command"],
+      "key": "delete"
+    },
+    "down": {
       "modifiers": ["left_control", "left_command"],
       "key": null
     },
-    "send": {
+    "ok": {
       "modifiers": [],
       "key": "return"
-    },
-    "clear": {
-      "modifiers": ["left_command"],
-      "key": "delete"
     }
   },
   "provider": {

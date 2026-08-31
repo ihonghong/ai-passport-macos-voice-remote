@@ -59,17 +59,17 @@ Xcode Command Line Tools。
 升级时会保留已有 `config.json`，停用旧的 Python／LaunchAgent 运行方式，并由 App
 注册 macOS 登录项；不会刷写设备、清除蓝牙配对或卸载 BlackHole。
 
-## 配置语音快捷键
+## 配置三个实体键
 
-**使用语音键输入文字前，用户必须手动完成这一步。**公开固件会被识别为键盘；按住
-语音键时，它默认持续发送**左 Control + 左 Command**。这是 AI Passport 项目的默认值，
-不是 macOS、系统听写或任意输入法都通用的默认快捷键。每位用户都需要在自己选择的
-听写应用或输入法中，把全局语音触发快捷键设为完全相同的组合。主机安装器不会自动
-安装或配置豆包、macOS 听写或其他输入法。
+配置直接绑定三个实体控制键：`up`、`down`、`ok`，不会预先把它们固定成语音、发送、
+删除等语义。默认情况下，按住 `down` 会持续发送**左 Control + 左 Command**。这是
+AI Passport 项目的默认值，不是 macOS、系统听写或任意输入法都通用的默认快捷键。
+每位用户都需要在自己选择的听写应用或输入法中，把全局语音触发快捷键设为完全相同
+的组合。主机安装器不会自动安装或配置豆包、macOS 听写或其他输入法。
 
-绑定后，从菜单栏选择“AI Passport 输入”，聚焦一个文本框，按住 Passport 语音键说话，
-然后松开。如果所用应用有独立的麦克风选择项，也要在其中选择 `BlackHole 2ch`。发送键
-输出回车，清除键输出 Command-Delete。
+绑定后，从菜单栏选择“AI Passport 输入”，聚焦一个文本框，按住实体下键说话，然后
+松开。如果所用应用有独立的麦克风选择项，也要在其中选择 `BlackHole 2ch`。默认情况
+下，OK 键输出回车，上键输出 Command-Delete。
 
 “AI Passport 输入”会在 Bridge 与设备正常连接期间持续使用 `BlackHole 2ch`。如果
 Bridge 停止、报错或等待设备，状态栏应用会临时恢复上一次物理麦克风，避免系统停留在
@@ -85,10 +85,10 @@ Bridge 停止、报错或等待设备，状态栏应用会临时恢复上一次�
 {
   "device_name": "AI Passport",
   "audio_device": "BlackHole 2ch",
-  "shortcuts": {
-    "voice": { "modifiers": ["left_control", "left_command"], "key": null },
-    "send": { "modifiers": [], "key": "return" },
-    "clear": { "modifiers": ["left_command"], "key": "delete" }
+  "buttons": {
+    "up": { "modifiers": ["left_command"], "key": "delete" },
+    "down": { "modifiers": ["left_control", "left_command"], "key": null },
+    "ok": { "modifiers": [], "key": "return" }
   },
   "provider": {
     "name": "none",
@@ -97,12 +97,17 @@ Bridge 停止、报错或等待设备，状态栏应用会临时恢复上一次�
 }
 ```
 
-Bridge 连接后会通过现有 HID Output Report 一次发送完整快捷键映射。固件校验 checksum
-后，仅在映射变化时写入 NVS；相同配置不会重复写 Flash。该机制不改变 HID 描述，也不
-要求重新配对。可用修饰键名称包括 `left_control`、`left_shift`、`left_option`、
-`left_command` 以及对应的 `right_` 名称；具名按键包括 `return`、`escape`、`delete`、
-`space`，也可以填写 `0` 至 `101` 的 USB HID usage 整数。每个动作至少需要一个修饰键
-或普通键。编辑后重新启动 Bridge，并把听写应用设置为相同的语音组合键。
+Bridge 连接后会通过现有 HID Output Report 一次发送完整的 `up` / `down` / `ok` 映射。
+固件校验 checksum 后，仅在映射变化时写入 NVS；相同配置不会重复写 Flash。该机制不
+改变 HID 描述，也不要求重新配对。实体下键在按住期间仍负责控制麦克风音频流；它的
+配置只决定同时按住哪组键盘快捷键。上键与 OK 键则以点按方式发送各自配置。可用修饰
+键名称包括 `left_control`、`left_shift`、`left_option`、`left_command` 以及对应的
+`right_` 名称；具名按键包括 `return`、`escape`、`delete`、`space`，也可以填写 `0`
+至 `101` 的 USB HID usage 整数。每个实体键至少需要一个修饰键或普通键。编辑后重新
+启动 Bridge，并把听写应用设置为与下键相同的组合键。
+
+已有安装若仍使用旧的 `shortcuts.voice`、`shortcuts.send`、`shortcuts.clear`，App 会
+在内存中依次迁移为下键、OK 键、上键；新配置只应使用 `buttons`。
 
 指标默认关闭。需要时可把 `provider.name` 改为 `codex` 或 `auto`。原生 Codex
 Provider 会通过本地 Codex CLI 读取额度，并从本机 `~/.codex` 会话记录读取 Token

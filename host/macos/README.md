@@ -65,21 +65,21 @@ It preserves an existing `config.json`, retires the old Python/LaunchAgent
 runtime, and lets the App register itself as a macOS login item. It does not
 flash the device, erase Bluetooth pairing, or uninstall BlackHole.
 
-## Configure the voice shortcut
+## Configure the physical buttons
 
-**This manual step is required before the voice button can trigger text input.**
-The public firmware acts as a keyboard and defaults to holding **Left Control +
-Left Command** while the voice button is held. This combination is an AI Passport
-project default, not a universal macOS, Dictation, or input-method default. Every
-user must configure their preferred dictation application or input method to use
-exactly that combination as its global voice trigger. The host installer
+The configuration binds the three physical controls directly: `up`, `down`, and
+`ok`. It does not assign fixed voice, send, or delete semantics. The default
+`down` binding holds **Left Control + Left Command**; this is an AI Passport
+project default, not a universal macOS, Dictation, or input-method shortcut.
+Every user must configure their preferred dictation application or input method
+to use exactly that combination as its global voice trigger. The host installer
 deliberately does not install or configure Doubao, macOS Dictation, or another
 input method.
 
 After binding it, select **AI Passport input** from the menu-bar app, focus a
-text field, hold the Passport voice button, speak, and release it. If the chosen
+text field, hold the physical Down button, speak, and release it. If the chosen
 application has its own microphone selector, choose `BlackHole 2ch` there as
-well. The send button emits Return and the clear button emits Command-Delete.
+well. By default, OK emits Return and Up emits Command-Delete.
 
 **AI Passport input** keeps `BlackHole 2ch` selected while the bridge is
 connected to the device. If the bridge stops, fails, or waits for the device,
@@ -98,10 +98,10 @@ Choose **Open configuration file** from the menu-bar item, edit it, then choose
 {
   "device_name": "AI Passport",
   "audio_device": "BlackHole 2ch",
-  "shortcuts": {
-    "voice": { "modifiers": ["left_control", "left_command"], "key": null },
-    "send": { "modifiers": [], "key": "return" },
-    "clear": { "modifiers": ["left_command"], "key": "delete" }
+  "buttons": {
+    "up": { "modifiers": ["left_command"], "key": "delete" },
+    "down": { "modifiers": ["left_control", "left_command"], "key": null },
+    "ok": { "modifiers": [], "key": "return" }
   },
   "provider": {
     "name": "none",
@@ -110,15 +110,22 @@ Choose **Open configuration file** from the menu-bar item, edit it, then choose
 }
 ```
 
-The Bridge sends the complete shortcut map through the existing HID Output
-Report after connecting. Firmware validates its checksum and stores a changed
-map in NVS; unchanged maps do not write Flash. This does not change the HID
-descriptor or require re-pairing. Supported modifier names are `left_control`,
-`left_shift`, `left_option`, `left_command`, and their `right_` equivalents.
-Named keys are `return`, `escape`, `delete`, and `space`; a USB HID usage from
-`0` through `101` may be supplied as an integer. At least one modifier or key is
-required for every action. Restart the Bridge after editing, and configure the
-dictation application to use the same voice chord.
+The Bridge sends the complete `up` / `down` / `ok` map through the existing HID
+Output Report after connecting. Firmware validates its checksum and stores a
+changed map in NVS; unchanged maps do not write Flash. This does not change the
+HID descriptor or require re-pairing. The physical Down button still controls
+the microphone stream while held; its configured chord only determines which
+keyboard shortcut is held at the same time. Up and OK send their configured
+chords as taps. Supported modifier names are `left_control`, `left_shift`,
+`left_option`, `left_command`, and their `right_` equivalents. Named keys are
+`return`, `escape`, `delete`, and `space`; a USB HID usage from `0` through `101`
+may be supplied as an integer. At least one modifier or key is required for
+every button. Restart the Bridge after editing, and configure the dictation
+application to use the same Down-button chord.
+
+Existing installations that still contain the earlier `shortcuts.voice`,
+`shortcuts.send`, and `shortcuts.clear` fields are migrated in memory to Down,
+OK, and Up respectively. New configurations should only use `buttons`.
 
 Metrics are disabled by default. Set `provider.name` to `codex` or `auto` to opt
 in. The native Codex Provider reads rate limits

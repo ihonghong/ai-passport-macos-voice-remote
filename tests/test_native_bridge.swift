@@ -10,9 +10,27 @@ private func require(_ condition: @autoclosure () -> Bool, _ message: String) {
 @main
 private struct NativeBridgeTests {
     static func main() throws {
-        let keymap = try PassportProtocol.keymapPayload(AppConfiguration.defaults.shortcuts)
+        let keymap = try PassportProtocol.keymapPayload(AppConfiguration.defaults.buttons)
         require(keymap.map { String(format: "%02x", $0) }.joined() == "4b09000028082ac3",
                 "native keymap must match the Python/firmware contract")
+
+        let physical = try JSONDecoder().decode(AppConfiguration.self, from: Data("""
+        {"buttons":{"up":{"modifiers":[],"key":"escape"},"down":{"modifiers":["left_shift"],"key":null},"ok":{"modifiers":[],"key":"space"}}}
+        """.utf8))
+        require(physical.buttons.up.key == .name("escape"),
+                "public configuration must bind the physical Up button")
+        require(physical.buttons.down.modifiers == ["left_shift"],
+                "public configuration must bind the physical Down button")
+        require(physical.buttons.ok.key == .name("space"),
+                "public configuration must bind the physical OK button")
+
+        let legacy = try JSONDecoder().decode(AppConfiguration.self, from: Data("""
+        {"shortcuts":{"voice":{"modifiers":["left_control"],"key":null},"send":{"modifiers":[],"key":"return"},"clear":{"modifiers":[],"key":"escape"}}}
+        """.utf8))
+        require(legacy.buttons.down.modifiers == ["left_control"] &&
+                legacy.buttons.ok.key == .name("return") &&
+                legacy.buttons.up.key == .name("escape"),
+                "legacy semantic configuration must migrate to Down, OK, and Up")
 
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "Asia/Shanghai")!

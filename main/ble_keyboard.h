@@ -52,11 +52,11 @@ esp_err_t ble_keyboard_tap(uint8_t key_code);
 // Press and release one key with modifiers.
 esp_err_t ble_keyboard_tap_chord(uint8_t modifiers, uint8_t key_code);
 
-// Send the configured chord for a semantic action. The map is loaded from NVS
+// Send the configured chord for a physical button. The map is loaded from NVS
 // at startup and can be replaced atomically through host Output Report 3.
-esp_err_t ble_keyboard_shortcut_press(shortcut_action_t action);
-esp_err_t ble_keyboard_shortcut_release(shortcut_action_t action);
-esp_err_t ble_keyboard_shortcut_tap(shortcut_action_t action);
+esp_err_t ble_keyboard_button_press(shortcut_button_t button);
+esp_err_t ble_keyboard_button_release(shortcut_button_t button);
+esp_err_t ble_keyboard_button_tap(shortcut_button_t button);
 
 // Stream 8 kHz signed 8-bit mono PCM through the vendor BLE HID input report.
 // The Mac bridge expands it back to 16-bit before feeding Core Audio.
