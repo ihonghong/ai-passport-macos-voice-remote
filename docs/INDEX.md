@@ -10,6 +10,7 @@ Use this page to discover repository documentation. `authoritative` documents de
 | --- | --- | --- |
 | [README.md](README.md) | Project overview and capability contract | authoritative |
 | [CHANGELOG.md](CHANGELOG.md) | User-visible behavior, compatibility, and release history | authoritative |
+| [releases/v0.1.0.md](releases/v0.1.0.md) | AI Passport Mac Voice Remote v0.1.0 release notes | reference |
 | [brand-and-product.md](brand-and-product.md) | Brand, positioning, official links, and product facts | authoritative |
 | [contribution/README.md](contribution/README.md) | Contribution-document index | authoritative |
 | [contribution/doc-conventions.md](contribution/doc-conventions.md) | Documentation language, ownership, safety, and maintenance | authoritative |

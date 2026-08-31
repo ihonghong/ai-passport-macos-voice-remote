@@ -6,6 +6,13 @@
 
 ## Unreleased
 
+- Prepared the `v0.1.0` release path: semantic tags inject the App version,
+  tagged builds require Developer ID signing and Apple notarization, and the
+  Release publishes verified firmware, a universal native App, SHA-256
+  checksums, and paired English/Chinese notes.
+- Renamed the menu action to **Apply latest configuration (restart audio
+  bridge)** and documented that saving `config.json` alone does not update the
+  running App or device button map.
 - Fixed native macOS discovery for the board's composite HID device: macOS
   reports the keyboard collection as the primary usage and the wireless-audio
   channel in its usage-pair list, so the App now checks both representations.

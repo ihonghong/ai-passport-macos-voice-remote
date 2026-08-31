@@ -37,9 +37,10 @@ Command Line Tools are required only when building the App from source.
 ## Install
 
 For a release, download `AI-Passport-macOS.zip`, move `AI Passport.app` into
-Applications, and open it. The ad-hoc CI artifact may require **Open** from the
-Finder context menu; a zero-warning public download requires a Developer ID
-signature and Apple notarization.
+Applications, and open it. Tagged releases are Developer ID signed and Apple
+notarized; the release workflow refuses to publish when those credentials are
+missing. Manual CI artifacts and local builds remain ad-hoc signed and may
+require **Open** from the Finder context menu.
 
 To build and install from a clone, run:
 
@@ -97,7 +98,9 @@ automatic resume until **AI Passport input** is selected again.
 ## Configuration
 
 Choose **Open configuration file** from the menu-bar item, edit it, then choose
-**Restart audio bridge**. The file lives at
+**Apply latest configuration (restart audio bridge)**. Saving the file alone
+does not change the running configuration; restarting reloads the file and
+sends the latest button mappings to the device. The file lives at
 `~/Library/Application Support/AI Passport Bridge/config.json`:
 
 ```json

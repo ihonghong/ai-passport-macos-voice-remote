@@ -10,6 +10,17 @@ ARCHIVE_PATH="$OUTPUT_DIR/AI-Passport-macOS.zip"
 IDENTITY=${AI_PASSPORT_CODESIGN_IDENTITY:--}
 ARCH_TEXT=${AI_PASSPORT_ARCHS:-"arm64 x86_64"}
 ARCHS=(${=ARCH_TEXT})
+APP_VERSION=${AI_PASSPORT_VERSION:-0.1.0}
+BUILD_NUMBER=${AI_PASSPORT_BUILD_NUMBER:-1}
+
+[[ $APP_VERSION =~ '^[0-9]+(\.[0-9]+){1,2}$' ]] || {
+  print -u2 "Invalid AI_PASSPORT_VERSION: $APP_VERSION"
+  exit 2
+}
+[[ $BUILD_NUMBER =~ '^[0-9]+$' ]] || {
+  print -u2 "Invalid AI_PASSPORT_BUILD_NUMBER: $BUILD_NUMBER"
+  exit 2
+}
 
 [[ $(uname -s) == Darwin ]] || { print -u2 "macOS is required"; exit 1; }
 command -v xcrun >/dev/null || { print -u2 "Xcode Command Line Tools are required"; exit 1; }
@@ -54,6 +65,12 @@ else
     -output "$BUILD_DIR/$APP_NAME/Contents/MacOS/AI Passport"
 fi
 cp "$SCRIPT_DIR/statusbar/Info.plist" "$BUILD_DIR/$APP_NAME/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c \
+  "Set :CFBundleShortVersionString $APP_VERSION" \
+  "$BUILD_DIR/$APP_NAME/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c \
+  "Set :CFBundleVersion $BUILD_NUMBER" \
+  "$BUILD_DIR/$APP_NAME/Contents/Info.plist"
 cp "$SCRIPT_DIR/bridge/config.example.json" \
   "$BUILD_DIR/$APP_NAME/Contents/Resources/config.example.json"
 
@@ -72,6 +89,7 @@ ditto -c -k --keepParent --norsrc --noextattr --noacl \
 
 print "Built: $APP_PATH"
 print "Archive: $ARCHIVE_PATH"
+print "Version: $APP_VERSION ($BUILD_NUMBER)"
 if [[ $IDENTITY == - ]]; then
   print "Signing: ad hoc (public releases still require Developer ID + notarization)"
 else

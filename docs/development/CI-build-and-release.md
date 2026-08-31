@@ -4,11 +4,44 @@
 
 # Automated Build and Release
 
-`.github/workflows/build-firmware.yml` builds and publishes firmware for tags and supports manual dispatch. Ordinary branch pushes do not trigger it. Keep this page synchronized with the workflow.
+`.github/workflows/build-firmware.yml` builds the firmware and universal macOS
+App for semantic-version tags and supports manual dispatch. Ordinary branch
+pushes do not trigger it. Keep this page synchronized with the workflow.
 
-The build job restores ccache, runs `./tools/validate.sh --firmware` with ESP-IDF 5.5.3 for ESP32-C3, verifies the bootloader at `0x0`, partition table at `0x8000`, application at `0x10000`, 8 MB Flash arguments, and the complete mini-program BLE compatibility contract, then uploads `FoloToy-AI-Passport-full.bin`. A separate least-privilege release job publishes that artifact only for a tag.
+The build job restores ccache, runs `./tools/validate.sh --firmware` with ESP-IDF 5.5.3 for ESP32-C3, verifies the bootloader at `0x0`, partition table at `0x8000`, application at `0x10000`, 8 MB Flash arguments, and the complete mini-program BLE compatibility contract, then uploads `FoloToy-AI-Passport-full.bin`. A separate least-privilege release job publishes the verified firmware, macOS App, and checksums only for a tag.
+
+The macOS job builds an `arm64`/`x86_64` native App. Manual dispatch may produce
+an ad-hoc-signed test artifact. A `v*.*.*` tag refuses to publish unless the App
+is signed with Developer ID, submitted to Apple notarization, stapled, and
+accepted by Gatekeeper.
 
 All Actions are pinned to full commit SHAs. The build job has `contents: read`; only the tag release job receives `contents: write`.
+
+## Release signing secrets
+
+Configure these GitHub Actions secrets before pushing the first tag:
+
+- `MACOS_CERTIFICATE_BASE64`: base64-encoded Developer ID Application `.p12`.
+- `MACOS_CERTIFICATE_PASSWORD`: password for that `.p12`.
+- `MACOS_SIGNING_IDENTITY`: full Developer ID Application identity.
+- `APPLE_API_KEY_P8`: App Store Connect API private-key contents.
+- `APPLE_API_KEY_ID`: App Store Connect API key ID.
+- `APPLE_API_ISSUER_ID`: App Store Connect issuer ID.
+
+The certificate is imported into a temporary keychain that is deleted at the
+end of the job. Secrets and signing files must never be committed.
+
+## Release assets
+
+A successful tagged release contains exactly these downloadable assets:
+
+- `FoloToy-AI-Passport-full.bin`: verified merged ESP32-C3 firmware.
+- `AI-Passport-macOS.zip`: signed, notarized universal native App with the
+  Bridge built in; it does not contain Python or BlackHole.
+- `SHA256SUMS.txt`: SHA-256 digests for the firmware and App archive.
+
+The firmware CI uses the public `none` pet and `generic` Provider display
+profiles. It contains no private artwork or per-device data.
 
 ## Install the release safely
 
@@ -43,10 +76,10 @@ the tag; the repository and release title already carry it.
 
 ## Release notes
 
-A tag-triggered release succeeds only when the merged firmware and its release
-notes travel together. After the release is published, write release notes that
-explain the build to a user who may not have read the repository. Cover three
-things:
+A tag-triggered release succeeds only when both language files exist at
+`docs/releases/<tag>.md` and `docs/releases/<tag>.zh_CN.md`. The workflow combines
+them into the GitHub Release body. Write them before pushing the tag and explain
+the build to a user who may not have read the repository. Cover three things:
 
 - **What's new**: the features, behaviors, or fixes this release adds or
   changes compared with the previous one. Keep it user-facing, not a commit log.
@@ -57,9 +90,8 @@ things:
   normal installation, document segmented `idf.py flash` for development, and
   clearly label raw `0x0` USB writing as a bond-resetting recovery operation.
 
-Write the release notes in English (and a Simplified Chinese version where the
-project is bilingual) and link them from the GitHub/GitLab release. Keep them
-consistent with `docs/CHANGELOG.md` for user-visible behavior.
+Keep both language files consistent with `docs/CHANGELOG.md` for user-visible
+behavior.
 
 ## Related documents
 

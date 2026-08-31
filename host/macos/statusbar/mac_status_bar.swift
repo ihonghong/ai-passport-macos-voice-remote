@@ -271,7 +271,7 @@ private final class StatusAppDelegate: NSObject, NSApplicationDelegate {
         openConfig.isEnabled = true
 
         let restart = NSMenuItem(
-            title: "重新启动音频桥",
+            title: "应用最新配置（重启音频桥）",
             action: #selector(restartBridge),
             keyEquivalent: ""
         )

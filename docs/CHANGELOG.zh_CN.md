@@ -6,6 +6,11 @@
 
 ## Unreleased
 
+- 完成 `v0.1.0` 发布路径准备：语义化 tag 会注入 App 版本，tag 构建必须经过
+  Developer ID 签名与 Apple 公证；Release 同时发布经过验证的固件、通用原生 App、
+  SHA-256 校验文件和中英文配对说明。
+- 将菜单操作改名为“应用最新配置（重启音频桥）”，并明确只保存 `config.json` 不会
+  更新当前运行的 App 或设备按键映射。
 - 修复原生 macOS App 对开发板复合 HID 设备的发现：macOS 会把键盘集合登记为主用途，
   把无线音频通道放在用途集合列表中，因此 App 现在会同时检查两种表示。
 - 修复原生 macOS HID Output Report 帧格式：发送缓冲区现在包含 Report ID 3，恢复

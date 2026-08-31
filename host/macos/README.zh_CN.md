@@ -34,8 +34,9 @@ Xcode Command Line Tools。
 ## 安装
 
 普通用户可从 Release 下载 `AI-Passport-macOS.zip`，把 `AI Passport.app` 移入
-“应用程序”后打开。CI 生成的临时签名版本可能需要在访达中右键选择“打开”；若希望
-下载后完全没有 Gatekeeper 提示，Release 还需要 Developer ID 签名和 Apple 公证。
+“应用程序”后打开。tag Release 必须经过 Developer ID 签名与 Apple 公证；缺少相应
+凭证时，发布工作流会直接失败。手动 CI artifact 与本地构建仍使用临时签名，可能需要
+在访达中右键选择“打开”。
 
 从源码构建安装时运行：
 
@@ -83,7 +84,9 @@ Bridge 停止、报错或等待设备，状态栏应用会临时恢复上一次�
 
 ## 配置
 
-从菜单栏选择“打开配置文件”，编辑后再选择“重新启动音频桥”。文件位于
+从菜单栏选择“打开配置文件”，编辑并保存后再选择“应用最新配置（重启音频桥）”。
+仅保存文件不会改变当前运行配置；重启音频桥后，App 才会重新读取文件并把最新按键
+映射发送给设备。文件位于
 `~/Library/Application Support/AI Passport Bridge/config.json`：
 
 ```json
