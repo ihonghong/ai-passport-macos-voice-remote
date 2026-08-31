@@ -41,6 +41,8 @@ Applications, and try to open it. Public releases are precompiled universal
 Unsigned Beta builds, so no source build or Apple Developer account is required.
 Because they are not notarized, the first launch requires **System Settings >
 Privacy & Security > Open Anyway**. Confirm the prompt, then open the App again.
+If BlackHole is missing, the App shows a one-time explanation and keeps an
+**Install BlackHole 2ch…** action in its menu until the device becomes available.
 
 To build and install from a clone, run:
 

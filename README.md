@@ -56,7 +56,9 @@ Unsigned Beta is a universal native binary and does not bundle or require
 Python, Xcode, or an Apple Developer account. On first launch, allow it through
 **System Settings > Privacy & Security > Open Anyway**, then grant Input
 Monitoring. Install BlackHole 2ch once, then pair an AI Passport already running
-compatible firmware.
+compatible firmware. If BlackHole is missing, the App explains why it is needed
+and provides an **Install BlackHole 2ch…** menu action that opens the official
+installation page.
 
 To build the same App from a clone (Xcode Command Line Tools required):
 

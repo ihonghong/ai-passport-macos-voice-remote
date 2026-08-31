@@ -207,6 +207,12 @@ enum CodexMetrics {
         return min(100, max(0, 100 - used))
     }
 
+    static func parseTimestamp(_ value: String) -> Date? {
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return fractional.date(from: value) ?? ISO8601DateFormatter().date(from: value)
+    }
+
     private static func tokenDelta(
         record: [String: Any], day: Date, calendar: Calendar
     ) -> Int {
@@ -214,7 +220,7 @@ enum CodexMetrics {
               let payload = record["payload"] as? [String: Any],
               payload["type"] as? String == "token_count",
               let timestamp = record["timestamp"] as? String,
-              let date = ISO8601DateFormatter().date(from: timestamp),
+              let date = parseTimestamp(timestamp),
               calendar.isDate(date, inSameDayAs: day),
               let info = payload["info"] as? [String: Any],
               let usage = info["last_token_usage"] as? [String: Any],

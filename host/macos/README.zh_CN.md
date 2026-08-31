@@ -37,6 +37,8 @@ Xcode Command Line Tools。
 “应用程序”后尝试打开。公开 Release 是已经编译好的通用 Unsigned Beta，用户不需要
 从源码构建，也不需要 Apple Developer 账号。由于它没有经过 Apple 公证，首次运行时
 需要进入**系统设置 > 隐私与安全性**，选择**仍要打开**，确认后再次打开 App。
+如果缺少 BlackHole，App 会显示一次用途说明，并在检测到该设备前持续在菜单中提供
+“安装 BlackHole 2ch…”入口。
 
 从源码构建安装时运行：
 

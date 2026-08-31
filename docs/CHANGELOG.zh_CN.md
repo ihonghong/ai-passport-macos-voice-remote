@@ -6,6 +6,10 @@
 
 ## Unreleased
 
+- 新增首次启动 BlackHole 检测、一次性依赖说明，以及缺少设备时持续显示的官方安装
+  页面入口。
+- 修复原生 Codex 今日 Token 始终显示为 0 的问题；Provider 现在可以解析会话记录中
+  带毫秒的时间戳。
 - 完成 `v0.1.0` Unsigned Beta 发布路径准备：语义化 tag 会注入 App 版本，并以
   GitHub 预发布形式提供经过验证的固件、预编译临时签名通用 App、SHA-256 校验文件
   和中英文配对说明；不需要 Apple Developer 账号。

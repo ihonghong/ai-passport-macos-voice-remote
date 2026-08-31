@@ -6,6 +6,10 @@
 
 ## Unreleased
 
+- Added first-launch BlackHole detection, a one-time dependency explanation,
+  and a persistent official installation link while the device is missing.
+- Fixed native Codex daily-token totals staying at zero because session
+  timestamps with fractional seconds were rejected.
 - Prepared the `v0.1.0` Unsigned Beta release path: semantic tags inject the
   App version and publish verified firmware, a precompiled ad-hoc-signed
   universal native App, SHA-256 checksums, and paired English/Chinese notes as

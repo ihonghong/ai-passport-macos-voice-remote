@@ -132,6 +132,12 @@ private final class AudioInputManager {
         defaultInputName == virtualInputName
     }
 
+    var virtualInputAvailable: Bool {
+        devices().contains {
+            propertyString(device: $0, selector: kAudioObjectPropertyName) == virtualInputName
+        }
+    }
+
     private func setDefault(_ device: AudioDeviceID) -> Bool {
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDefaultInputDevice,
@@ -215,9 +221,16 @@ private final class StatusAppDelegate: NSObject, NSApplicationDelegate {
         action: #selector(toggleLoginItem),
         keyEquivalent: ""
     )
+    private let installBlackHoleItem = NSMenuItem(
+        title: "安装 BlackHole 2ch…",
+        action: #selector(openBlackHoleInstallPage),
+        keyEquivalent: ""
+    )
     private let audioInputs = AudioInputManager()
     private let resumePassportInputKey = "resumePassportInputWhenConnected"
     private let inputPolicyInitializedKey = "connectionInputPolicyInitialized"
+    private let blackHolePromptKey = "didShowBlackHoleInstallPrompt"
+    private let blackHoleInstallURL = URL(string: "https://existential.audio/blackhole/")!
     private var bridgeIsAlive = false
     private var deviceIsConnected = false
     private var connectionStateIsKnown = false
@@ -261,6 +274,9 @@ private final class StatusAppDelegate: NSObject, NSApplicationDelegate {
         loginItem.target = self
         loginItem.isEnabled = true
         menu.addItem(loginItem)
+        installBlackHoleItem.target = self
+        installBlackHoleItem.isEnabled = true
+        menu.addItem(installBlackHoleItem)
 
         let openConfig = NSMenuItem(
             title: "打开配置文件",
@@ -297,6 +313,7 @@ private final class StatusAppDelegate: NSObject, NSApplicationDelegate {
             refreshLoginItem()
         }
 
+        refreshBlackHoleAvailability(showAlert: true)
         startNativeBridge(reloadConfiguration: true)
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) {
             [weak self] _ in
@@ -346,7 +363,32 @@ private final class StatusAppDelegate: NSObject, NSApplicationDelegate {
     private func refreshStatus() {
         bridgeIsAlive = nativeBridge?.isRunning == true
         bridgeToggleItem.title = bridgeIsAlive ? "关闭音频桥" : "开启音频桥"
+        refreshBlackHoleAvailability(showAlert: false)
         refreshModeItems()
+    }
+
+    private func refreshBlackHoleAvailability(showAlert: Bool) {
+        let available = audioInputs.virtualInputAvailable
+        installBlackHoleItem.isHidden = available
+        if available {
+            UserDefaults.standard.set(false, forKey: blackHolePromptKey)
+            return
+        }
+        guard showAlert,
+              !UserDefaults.standard.bool(forKey: blackHolePromptKey)
+        else { return }
+        UserDefaults.standard.set(true, forKey: blackHolePromptKey)
+
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "无线麦克风需要 BlackHole 2ch"
+        alert.informativeText = "BlackHole 2ch 是 AI Passport 把无线音频提供给听写应用所需的虚拟麦克风。安装完成后，请按安装提示重启 Mac，再打开 AI Passport。"
+        alert.addButton(withTitle: "打开官方安装页面")
+        alert.addButton(withTitle: "稍后")
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn {
+            NSWorkspace.shared.open(blackHoleInstallURL)
+        }
     }
 
     private func refreshModeItems() {
@@ -424,6 +466,10 @@ private final class StatusAppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         NSWorkspace.shared.open(configURL)
+    }
+
+    @objc private func openBlackHoleInstallPage() {
+        NSWorkspace.shared.open(blackHoleInstallURL)
     }
 
     @objc private func restartBridge() {

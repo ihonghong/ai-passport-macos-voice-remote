@@ -67,6 +67,10 @@ private struct NativeBridgeTests {
         let resampler = try PCMResampler(inputRate: 16_000)
         let output = try resampler.convert(Data([0, 0, 0xff, 0x7f]), bitsPerSample: 16)
         require(output.count == 2 * 3 * 2 * 2, "16 kHz mono must become 48 kHz stereo")
+        require(CodexMetrics.parseTimestamp("2026-08-30T17:36:57.086Z") != nil,
+                "Codex timestamps with fractional seconds must be accepted")
+        require(CodexMetrics.parseTimestamp("2026-08-30T17:36:57Z") != nil,
+                "Codex timestamps without fractional seconds must remain supported")
         require(CodexMetrics.readDailyTokens() >= 0, "daily token total cannot be negative")
 
         print("Native Bridge protocol tests: PASS")
