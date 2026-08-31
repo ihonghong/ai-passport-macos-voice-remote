@@ -46,8 +46,10 @@ AI Passport，请使用永久 Recovery 和官方小程序安装：上电时按�
 ## macOS 快速开始
 
 普通用户从 Release 下载 `AI-Passport-macOS.zip`，把 `AI Passport.app` 移到
-“应用程序”并打开即可。它是通用原生程序，不捆绑也不依赖 Python。只需安装一次
-BlackHole 2ch，再配对已经运行兼容固件的 AI Passport。
+“应用程序”并尝试打开即可。这个预编译的 Unsigned Beta 是通用原生程序，不捆绑也
+不依赖 Python、Xcode 或 Apple Developer 账号。首次运行时，请进入**系统设置 >
+隐私与安全性**选择**仍要打开**，随后授予输入监控权限。只需安装一次 BlackHole 2ch，
+再配对已经运行兼容固件的 AI Passport。
 
 如果要从源码构建同一个 App（需要 Xcode Command Line Tools）：
 

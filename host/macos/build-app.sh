@@ -91,7 +91,7 @@ print "Built: $APP_PATH"
 print "Archive: $ARCHIVE_PATH"
 print "Version: $APP_VERSION ($BUILD_NUMBER)"
 if [[ $IDENTITY == - ]]; then
-  print "Signing: ad hoc (public releases still require Developer ID + notarization)"
+  print "Signing: ad hoc (unsigned beta; users must approve it in Privacy & Security)"
 else
   print "Signing: $IDENTITY"
 fi

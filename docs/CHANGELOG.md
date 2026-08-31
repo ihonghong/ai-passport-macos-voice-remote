@@ -6,10 +6,10 @@
 
 ## Unreleased
 
-- Prepared the `v0.1.0` release path: semantic tags inject the App version,
-  tagged builds require Developer ID signing and Apple notarization, and the
-  Release publishes verified firmware, a universal native App, SHA-256
-  checksums, and paired English/Chinese notes.
+- Prepared the `v0.1.0` Unsigned Beta release path: semantic tags inject the
+  App version and publish verified firmware, a precompiled ad-hoc-signed
+  universal native App, SHA-256 checksums, and paired English/Chinese notes as
+  a GitHub prerelease. No Apple Developer account is required.
 - Renamed the menu action to **Apply latest configuration (restart audio
   bridge)** and documented that saving `config.json` alone does not update the
   running App or device button map.

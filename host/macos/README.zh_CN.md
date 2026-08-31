@@ -34,9 +34,9 @@ Xcode Command Line Tools。
 ## 安装
 
 普通用户可从 Release 下载 `AI-Passport-macOS.zip`，把 `AI Passport.app` 移入
-“应用程序”后打开。tag Release 必须经过 Developer ID 签名与 Apple 公证；缺少相应
-凭证时，发布工作流会直接失败。手动 CI artifact 与本地构建仍使用临时签名，可能需要
-在访达中右键选择“打开”。
+“应用程序”后尝试打开。公开 Release 是已经编译好的通用 Unsigned Beta，用户不需要
+从源码构建，也不需要 Apple Developer 账号。由于它没有经过 Apple 公证，首次运行时
+需要进入**系统设置 > 隐私与安全性**，选择**仍要打开**，确认后再次打开 App。
 
 从源码构建安装时运行：
 
@@ -48,9 +48,9 @@ Xcode Command Line Tools。
 如果本次刚安装 BlackHole，请重启 macOS 后再次运行安装器。随后打开
 **系统设置 > 蓝牙**，连接 **AI Passport**。macOS 询问时，还需要在
 **隐私与安全性 > 输入监控**中允许 **AI Passport**；该权限是必需的，因为开发板把
-无线音频通道和键盘放在同一个复合 HID 设备中，而 macOS 会把它识别成键盘。正式签名
-的 Release 升级后会保留权限；本地重新构建临时签名 App 会改变身份，可能需要再次开启
-新条目。授权后重启 App，再进行验证：
+无线音频通道和键盘放在同一个复合 HID 设备中，而 macOS 会把它识别成键盘。临时签名
+App 更新后，macOS 关联的权限身份可能变化；如果升级后无法接收设备输入，请重新允许
+新的 App 条目。授权后重启 App，再进行验证：
 
 ```bash
 ./host/macos/doctor.sh

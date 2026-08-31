@@ -10,34 +10,22 @@ pushes do not trigger it. Keep this page synchronized with the workflow.
 
 The build job restores ccache, runs `./tools/validate.sh --firmware` with ESP-IDF 5.5.3 for ESP32-C3, verifies the bootloader at `0x0`, partition table at `0x8000`, application at `0x10000`, 8 MB Flash arguments, and the complete mini-program BLE compatibility contract, then uploads `FoloToy-AI-Passport-full.bin`. A separate least-privilege release job publishes the verified firmware, macOS App, and checksums only for a tag.
 
-The macOS job builds an `arm64`/`x86_64` native App. Manual dispatch may produce
-an ad-hoc-signed test artifact. A `v*.*.*` tag refuses to publish unless the App
-is signed with Developer ID, submitted to Apple notarization, stapled, and
-accepted by Gatekeeper.
+The macOS job builds an `arm64`/`x86_64` native App with an ad-hoc signature.
+Manual dispatch uploads the same test artifact. A `v*.*.*` tag publishes it as
+an **Unsigned Beta** GitHub prerelease. Users receive a precompiled App and do
+not need Xcode or an Apple Developer account, but must approve its first launch
+in **System Settings > Privacy & Security > Open Anyway**.
 
 All Actions are pinned to full commit SHAs. The build job has `contents: read`; only the tag release job receives `contents: write`.
-
-## Release signing secrets
-
-Configure these GitHub Actions secrets before pushing the first tag:
-
-- `MACOS_CERTIFICATE_BASE64`: base64-encoded Developer ID Application `.p12`.
-- `MACOS_CERTIFICATE_PASSWORD`: password for that `.p12`.
-- `MACOS_SIGNING_IDENTITY`: full Developer ID Application identity.
-- `APPLE_API_KEY_P8`: App Store Connect API private-key contents.
-- `APPLE_API_KEY_ID`: App Store Connect API key ID.
-- `APPLE_API_ISSUER_ID`: App Store Connect issuer ID.
-
-The certificate is imported into a temporary keychain that is deleted at the
-end of the job. Secrets and signing files must never be committed.
 
 ## Release assets
 
 A successful tagged release contains exactly these downloadable assets:
 
 - `FoloToy-AI-Passport-full.bin`: verified merged ESP32-C3 firmware.
-- `AI-Passport-macOS.zip`: signed, notarized universal native App with the
-  Bridge built in; it does not contain Python or BlackHole.
+- `AI-Passport-macOS.zip`: precompiled ad-hoc-signed universal native App with
+  the Bridge built in; it is not notarized and does not contain Python or
+  BlackHole.
 - `SHA256SUMS.txt`: SHA-256 digests for the firmware and App archive.
 
 The firmware CI uses the public `none` pet and `generic` Provider display
@@ -71,8 +59,9 @@ compatibility](ble-recovery-compatibility.md).
 
 This repository ships one supported product. Use semantic tags such as `v0.1.0`
 and let the workflow publish the release as
-`v0.1.0 — AI Passport Mac Voice Remote`. Do not repeat the application name in
-the tag; the repository and release title already carry it.
+`v0.1.0 — AI Passport Mac Voice Remote (Unsigned Beta)`. The GitHub Release is
+marked as a prerelease. Do not repeat the application name in the tag; the
+repository and release title already carry it.
 
 ## Release notes
 

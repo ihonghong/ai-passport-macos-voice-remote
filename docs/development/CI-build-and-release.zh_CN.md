@@ -21,9 +21,10 @@
 1. **ccache 缓存恢复**：使用 `actions/cache` 缓存编译中间产物（`.ccache`），二次编译大幅提速。缓存 key 含 ref 与 commit SHA；缓存保留时间以仓库的 GitHub Actions 设置为准。
 2. **编译与验证**（ESP-IDF 5.5.3 / esp32c3）：运行与本地相同的 `./tools/validate.sh --firmware`。脚本使用 `sdkconfig.defaults` 和 `partitions.csv` 构建固件，再执行 `idf.py merge-bin`。
 3. **验证完整固件**：脚本逐字节确认 bootloader、partition-table 和 app 位于 `0x0`、`0x8000` 和 `0x10000`，确认 `flash_args` 使用 8 MB Flash，并完整检查小程序 BLE 兼容契约，最后输出 `build/FoloToy-AI-Passport-full.bin`。
-4. **构建 macOS App**：生成同时支持 `arm64` 和 `x86_64` 的原生 App。手动运行可以生成
-   临时签名测试包；tag 构建必须完成 Developer ID 签名、Apple 公证、装订与 Gatekeeper
-   校验，否则拒绝发布。
+4. **构建 macOS App**：生成同时支持 `arm64` 和 `x86_64`、使用临时签名的原生 App。
+   手动运行会上传相同的测试包；tag 构建会把它作为 **Unsigned Beta** GitHub 预发布。
+   用户无需 Xcode 或 Apple Developer 账号，但首次运行需要在**系统设置 > 隐私与
+   安全性**中选择**仍要打开**。
 5. **上传 artifact**：每次成功构建都上传固件与 Mac App。普通分支只有从该分支手动运行
    `workflow_dispatch` 才会构建；普通 push 不触发。
 6. **发布 tag**：tag 构建完成后，独立 release job 下载上述 artifact，生成 SHA-256
@@ -31,26 +32,13 @@
 
 构建 job 只有 `contents: read` 权限；仅 release job 在 tag 发布时获得 `contents: write`。所有 Action 均固定到完整 commit SHA，行尾注释保留对应发布版本，升级时需同时核对 SHA 与版本。
 
-## Release 签名 Secrets
-
-推送第一个 tag 前，需要配置以下 GitHub Actions Secrets：
-
-- `MACOS_CERTIFICATE_BASE64`：经过 base64 编码的 Developer ID Application `.p12`。
-- `MACOS_CERTIFICATE_PASSWORD`：该 `.p12` 的密码。
-- `MACOS_SIGNING_IDENTITY`：完整的 Developer ID Application 身份名称。
-- `APPLE_API_KEY_P8`：App Store Connect API 私钥内容。
-- `APPLE_API_KEY_ID`：App Store Connect API Key ID。
-- `APPLE_API_ISSUER_ID`：App Store Connect Issuer ID。
-
-证书只导入 CI 临时钥匙串，并在 job 结束时删除。凭证与签名文件不得提交进仓库。
-
 ## Release 产物
 
 成功的 tag Release 固定包含三个可下载产物：
 
 - `FoloToy-AI-Passport-full.bin`：经过验证的 ESP32-C3 合并固件。
-- `AI-Passport-macOS.zip`：经过签名与公证、已经内置 Bridge 的通用原生 App；不包含
-  Python 或 BlackHole。
+- `AI-Passport-macOS.zip`：已经预编译、使用临时签名并内置 Bridge 的通用原生 App；
+  未经过 Apple 公证，也不包含 Python 或 BlackHole。
 - `SHA256SUMS.txt`：固件与 App 压缩包的 SHA-256 校验值。
 
 固件 CI 使用公开的 `none` 宠物和 `generic` Provider 显示配置，不包含私人素材或单台
@@ -77,8 +65,8 @@
 ## Release 标题
 
 本仓库只发布一个受支持的产品。Tag 使用 `v0.1.0` 这样的语义化版本，workflow 将
-Release 标题发布为 `v0.1.0 — AI Passport Mac Voice Remote`。无需在 tag 中重复应用名，
-仓库名和 Release 标题已经表达产品身份。
+Release 标题发布为 `v0.1.0 — AI Passport Mac Voice Remote (Unsigned Beta)`，并标记
+为 GitHub 预发布。无需在 tag 中重复应用名，仓库名和 Release 标题已经表达产品身份。
 
 ## Release 说明
 

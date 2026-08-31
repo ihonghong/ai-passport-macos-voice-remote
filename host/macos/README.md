@@ -37,10 +37,10 @@ Command Line Tools are required only when building the App from source.
 ## Install
 
 For a release, download `AI-Passport-macOS.zip`, move `AI Passport.app` into
-Applications, and open it. Tagged releases are Developer ID signed and Apple
-notarized; the release workflow refuses to publish when those credentials are
-missing. Manual CI artifacts and local builds remain ad-hoc signed and may
-require **Open** from the Finder context menu.
+Applications, and try to open it. Public releases are precompiled universal
+Unsigned Beta builds, so no source build or Apple Developer account is required.
+Because they are not notarized, the first launch requires **System Settings >
+Privacy & Security > Open Anyway**. Confirm the prompt, then open the App again.
 
 To build and install from a clone, run:
 
@@ -54,9 +54,9 @@ again. Then open **System Settings > Bluetooth**, connect **AI Passport**, and
 allow **AI Passport** under **Privacy & Security > Input Monitoring** when macOS
 asks. This permission is required because the board exposes its
 wireless-audio channel inside the same composite HID device that macOS identifies
-as a keyboard. A signed release keeps the permission across upgrades; rebuilding
-an ad-hoc-signed App locally changes its identity and may require enabling the
-new entry again. Restart the App after granting access, then verify the installation:
+as a keyboard. Ad-hoc App updates may change the identity macOS associates with
+this permission, so enable the new entry again if an upgrade stops receiving
+device input. Restart the App after granting access, then verify the installation:
 
 ```bash
 ./host/macos/doctor.sh

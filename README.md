@@ -51,9 +51,12 @@ recovery safety](docs/development/ble-recovery-compatibility.md).
 ## Quick start on macOS
 
 For normal use, download `AI-Passport-macOS.zip` from a Release, move
-`AI Passport.app` into Applications, and open it. The App is a universal native
-binary and does not bundle or require Python. Install BlackHole 2ch once, then
-pair an AI Passport already running compatible firmware.
+`AI Passport.app` into Applications, and try to open it. The precompiled
+Unsigned Beta is a universal native binary and does not bundle or require
+Python, Xcode, or an Apple Developer account. On first launch, allow it through
+**System Settings > Privacy & Security > Open Anyway**, then grant Input
+Monitoring. Install BlackHole 2ch once, then pair an AI Passport already running
+compatible firmware.
 
 To build the same App from a clone (Xcode Command Line Tools required):
 
