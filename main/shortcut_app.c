@@ -68,7 +68,6 @@ static bool s_voice_held;
 static volatile bool s_audio_requested;
 static volatile bool s_voice_button_down;
 static volatile uint32_t s_voice_transition_count;
-static bool s_has_pending_dictation;
 static int s_battery_soc = -1;
 static int s_codex_remaining = -1;
 static int32_t s_daily_tokens = -1;
@@ -474,7 +473,6 @@ static void handle_button(const shortcut_button_event_t *event)
     if (event->btn == BUTTON_VOICE && event->ev == BSP_BTN_RELEASE && s_voice_held) {
         s_audio_requested = false;
         s_voice_held = false;
-        s_has_pending_dictation = true;
         s_ui_state = audio_transport_ready() ? UI_READY : UI_WAITING;
         protocol_write("VOICE,UP");
         ui_refresh();
@@ -486,15 +484,13 @@ static void handle_button(const shortcut_button_event_t *event)
     if (event->ev != BSP_BTN_CLICK) return;
 
     if (event->btn == BUTTON_SEND) {
-        s_has_pending_dictation = false;
         s_ui_state = UI_RETURN_SENT;
         esp_err_t err = ble_keyboard_shortcut_tap(SHORTCUT_ACTION_SEND);
         if (err != ESP_OK) ESP_LOGW("shortcut_app", "Return failed: %s",
                                     esp_err_to_name(err));
         protocol_write("KEY,RETURN");
         ui_refresh();
-    } else if (event->btn == BUTTON_CLEAR && s_has_pending_dictation) {
-        s_has_pending_dictation = false;
+    } else if (event->btn == BUTTON_CLEAR) {
         s_ui_state = UI_CLEARED;
         esp_err_t err = ble_keyboard_shortcut_tap(SHORTCUT_ACTION_CLEAR);
         if (err != ESP_OK) ESP_LOGW("shortcut_app", "Clear failed: %s",
@@ -512,7 +508,6 @@ static void handle_ble_status(bool connected)
         s_audio_requested = false;
         s_voice_held = false;
     }
-    if (!connected) s_has_pending_dictation = false;
     if (!connected) s_audio_host_ready = false;
     if (!connected) s_pairing_passkey = 0;
     s_ui_state = audio_transport_ready() ? UI_READY : UI_WAITING;
