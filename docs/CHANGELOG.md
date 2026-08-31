@@ -6,6 +6,10 @@
 
 ## Unreleased
 
+- Added runtime shortcut maps for voice, send, and clear actions. The Mac host
+  validates a human-readable configuration, sends one checksum-protected record
+  over the existing HID Output Report, and firmware persists changed maps in
+  NVS without changing the report descriptor or forcing Bluetooth re-pairing.
 - Renamed the public repository target to
   `ai-passport-macos-voice-remote` and unified release installation guidance:
   provisioned devices use permanent Recovery and the official mini-program,

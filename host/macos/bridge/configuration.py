@@ -13,6 +13,14 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "device_name": "AI Passport",
     "audio_device": "BlackHole 2ch",
     "provider": {"name": "none", "settings": {}},
+    "shortcuts": {
+        "voice": {
+            "modifiers": ["left_control", "left_command"],
+            "key": None,
+        },
+        "send": {"modifiers": [], "key": "return"},
+        "clear": {"modifiers": ["left_command"], "key": "delete"},
+    },
 }
 
 DEFAULT_CONFIG_PATH = Path(
@@ -37,4 +45,15 @@ def load_config(path: str | None) -> tuple[dict[str, Any], Path | None]:
         if not isinstance(provider, dict):
             raise ValueError("provider must be a JSON object")
         config["provider"].update(provider)
+    shortcuts = custom.get("shortcuts")
+    if shortcuts is not None:
+        if not isinstance(shortcuts, dict):
+            raise ValueError("shortcuts must be a JSON object")
+        for action in ("voice", "send", "clear"):
+            if action not in shortcuts:
+                continue
+            chord = shortcuts[action]
+            if not isinstance(chord, dict):
+                raise ValueError(f"shortcuts.{action} must be a JSON object")
+            config["shortcuts"][action].update(chord)
     return config, selected

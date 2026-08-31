@@ -43,6 +43,7 @@ idf_component_register(
          "ble_keyboard.c"
          ${pet_plugin_sources}
          "shortcut_app.c"
+         "shortcut_keymap.c"
          "shortcut_protocol.c"
          "ui_pixel.c"
          "ui_pixel_math.c"

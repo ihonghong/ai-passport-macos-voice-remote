@@ -11,6 +11,7 @@
 #include "esp_mac.h"
 #include "esp_random.h"
 #include "nvs_flash.h"
+#include "nvs.h"
 
 #include "host/ble_gap.h"
 #include "host/ble_gatt.h"
@@ -39,6 +40,8 @@
 #define TX_TASK_STACK_SIZE 4096
 #define TX_TASK_PRIORITY 7
 #define IDLE_PROFILE_COOLDOWN_MS 3000
+#define KEYMAP_NVS_NAMESPACE "aipass_cfg"
+#define KEYMAP_NVS_KEY "keymap_v1"
 
 // Advertising is intentionally fast only during the reconnect window. A slow
 // forever phase avoids 20-33 radio wakeups per second when the paired Mac is
@@ -116,6 +119,54 @@ static uint8_t s_last_host_day = 0xff;
 static uint8_t s_last_host_weekday = 0xff;
 static uint8_t s_last_codex_remaining = 0xff;
 static uint8_t s_last_daily_token_bucket = 0xff;
+static shortcut_keymap_t s_keymap;
+
+static void load_keymap(void)
+{
+    s_keymap = shortcut_keymap_default();
+    nvs_handle_t handle;
+    esp_err_t err = nvs_open(KEYMAP_NVS_NAMESPACE, NVS_READONLY, &handle);
+    if (err == ESP_ERR_NVS_NOT_FOUND) {
+        ESP_LOGI(TAG, "Shortcut keymap: public defaults");
+        return;
+    }
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "Unable to open shortcut keymap: %s", esp_err_to_name(err));
+        return;
+    }
+
+    uint8_t record[SHORTCUT_KEYMAP_WIRE_BYTES];
+    size_t length = sizeof(record);
+    err = nvs_get_blob(handle, KEYMAP_NVS_KEY, record, &length);
+    nvs_close(handle);
+    shortcut_keymap_t stored;
+    if (err == ESP_OK) {
+        if (shortcut_keymap_decode(record, length, &stored)) {
+            s_keymap = stored;
+            ESP_LOGI(TAG, "Shortcut keymap: restored from NVS");
+        } else {
+            ESP_LOGW(TAG, "Ignoring invalid shortcut keymap record");
+        }
+    } else if (err != ESP_ERR_NVS_NOT_FOUND) {
+        ESP_LOGW(TAG, "Ignoring invalid shortcut keymap: %s",
+                 esp_err_to_name(err));
+    }
+}
+
+static esp_err_t save_keymap(const shortcut_keymap_t *keymap)
+{
+    uint8_t record[SHORTCUT_KEYMAP_WIRE_BYTES];
+    if (!shortcut_keymap_encode(keymap, record)) return ESP_ERR_INVALID_ARG;
+
+    nvs_handle_t handle;
+    esp_err_t err = nvs_open(KEYMAP_NVS_NAMESPACE, NVS_READWRITE, &handle);
+    if (err != ESP_OK) return err;
+    err = nvs_set_blob(handle, KEYMAP_NVS_KEY, record, sizeof(record));
+    if (err == ESP_OK) err = nvs_commit(handle);
+    nvs_close(handle);
+    if (err == ESP_OK) s_keymap = *keymap;
+    return err;
+}
 
 static int configure_keyboard_identity(void)
 {
@@ -272,8 +323,20 @@ static void date_from_days_since_2020(uint16_t days, uint16_t *year,
     *weekday = (uint8_t)((day_offset + 2U) % 7U) + 1U;
 }
 
-static void consume_host_status(const uint8_t *data, size_t length)
+static void consume_host_output(const uint8_t *data, size_t length)
 {
+    shortcut_keymap_t keymap;
+    if (shortcut_keymap_decode(data, length, &keymap)) {
+        if (memcmp(&keymap, &s_keymap, sizeof(keymap)) == 0) return;
+        esp_err_t err = save_keymap(&keymap);
+        if (err == ESP_OK) {
+            ESP_LOGI(TAG, "Shortcut keymap updated");
+        } else {
+            ESP_LOGW(TAG, "Unable to persist shortcut keymap: %s",
+                     esp_err_to_name(err));
+        }
+        return;
+    }
     if (length < 8 || data[0] != 0xA5 || data[1] != 'A' ||
         !s_host_status_cb) return;
 
@@ -757,7 +820,7 @@ static void hid_event(void *handler_arg, esp_event_base_t base, int32_t id,
         break;
     case ESP_HIDD_OUTPUT_EVENT:
         if (data->output.report_id == HOST_STATUS_REPORT_ID)
-            consume_host_status(data->output.data, data->output.length);
+            consume_host_output(data->output.data, data->output.length);
         break;
     default:
         break;
@@ -788,6 +851,7 @@ esp_err_t ble_keyboard_start(ble_keyboard_connection_cb_t connection_callback,
                  esp_err_to_name(err));
         return err;
     }
+    load_keymap();
 
     err = esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
     if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) return err;
@@ -871,7 +935,7 @@ void ble_keyboard_poll_host_status(void)
     uint16_t length = 0;
     int rc = ble_hs_mbuf_to_flat(om, data, sizeof(data), &length);
     os_mbuf_free_chain(om);
-    if (rc == 0) consume_host_status(data, length);
+    if (rc == 0) consume_host_output(data, length);
 }
 
 esp_err_t ble_keyboard_report(uint8_t modifiers, uint8_t key_code)
@@ -896,6 +960,32 @@ esp_err_t ble_keyboard_tap_chord(uint8_t modifiers, uint8_t key_code)
     if (err != ESP_OK) return err;
     vTaskDelay(pdMS_TO_TICKS(25));
     return ble_keyboard_report(0, 0);
+}
+
+static const shortcut_chord_t *shortcut_chord(shortcut_action_t action)
+{
+    if (action < 0 || action >= SHORTCUT_ACTION_COUNT) return NULL;
+    return &s_keymap.action[action];
+}
+
+esp_err_t ble_keyboard_shortcut_press(shortcut_action_t action)
+{
+    const shortcut_chord_t *chord = shortcut_chord(action);
+    return chord ? ble_keyboard_report(chord->modifiers, chord->key_code)
+                 : ESP_ERR_INVALID_ARG;
+}
+
+esp_err_t ble_keyboard_shortcut_release(shortcut_action_t action)
+{
+    if (!shortcut_chord(action)) return ESP_ERR_INVALID_ARG;
+    return ble_keyboard_report(0, 0);
+}
+
+esp_err_t ble_keyboard_shortcut_tap(shortcut_action_t action)
+{
+    const shortcut_chord_t *chord = shortcut_chord(action);
+    return chord ? ble_keyboard_tap_chord(chord->modifiers, chord->key_code)
+                 : ESP_ERR_INVALID_ARG;
 }
 
 static esp_err_t send_audio_packet(uint8_t type, uint16_t sequence,

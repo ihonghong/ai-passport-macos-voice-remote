@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "esp_err.h"
+#include "shortcut_keymap.h"
 
 typedef void (*ble_keyboard_connection_cb_t)(bool connected, void *user);
 typedef void (*ble_keyboard_pairing_cb_t)(uint32_t passkey, void *user);
@@ -51,6 +52,12 @@ esp_err_t ble_keyboard_tap(uint8_t key_code);
 // Press and release one key with modifiers.
 esp_err_t ble_keyboard_tap_chord(uint8_t modifiers, uint8_t key_code);
 
+// Send the configured chord for a semantic action. The map is loaded from NVS
+// at startup and can be replaced atomically through host Output Report 3.
+esp_err_t ble_keyboard_shortcut_press(shortcut_action_t action);
+esp_err_t ble_keyboard_shortcut_release(shortcut_action_t action);
+esp_err_t ble_keyboard_shortcut_tap(shortcut_action_t action);
+
 // Stream 8 kHz signed 8-bit mono PCM through the vendor BLE HID input report.
 // The Mac bridge expands it back to 16-bit before feeding Core Audio.
 esp_err_t ble_keyboard_audio_start(uint16_t sample_rate);
@@ -58,8 +65,8 @@ esp_err_t ble_keyboard_audio_write(const int8_t *pcm, size_t samples);
 esp_err_t ble_keyboard_audio_stop(void);
 
 // USB HID keyboard values used by the shortcut app.
-#define BLE_KBD_MOD_LEFT_CTRL 0x01
-#define BLE_KBD_MOD_LEFT_GUI  0x08
-#define BLE_KBD_KEY_RETURN    0x28
-#define BLE_KBD_KEY_ESCAPE    0x29
-#define BLE_KBD_KEY_DELETE    0x2A
+#define BLE_KBD_MOD_LEFT_CTRL SHORTCUT_HID_MOD_LEFT_CTRL
+#define BLE_KBD_MOD_LEFT_GUI  SHORTCUT_HID_MOD_LEFT_GUI
+#define BLE_KBD_KEY_RETURN    SHORTCUT_HID_KEY_RETURN
+#define BLE_KBD_KEY_ESCAPE    SHORTCUT_HID_KEY_ESCAPE
+#define BLE_KBD_KEY_DELETE    SHORTCUT_HID_KEY_DELETE

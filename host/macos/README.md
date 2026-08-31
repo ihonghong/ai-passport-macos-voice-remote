@@ -91,12 +91,27 @@ Edit `~/Library/Application Support/AI Passport Bridge/config.json`, then choose
 {
   "device_name": "AI Passport",
   "audio_device": "BlackHole 2ch",
+  "shortcuts": {
+    "voice": { "modifiers": ["left_control", "left_command"], "key": null },
+    "send": { "modifiers": [], "key": "return" },
+    "clear": { "modifiers": ["left_command"], "key": "delete" }
+  },
   "provider": {
     "name": "none",
     "settings": { "refresh_seconds": 300 }
   }
 }
 ```
+
+The Bridge sends the complete shortcut map through the existing HID Output
+Report after connecting. Firmware validates its checksum and stores a changed
+map in NVS; unchanged maps do not write Flash. This does not change the HID
+descriptor or require re-pairing. Supported modifier names are `left_control`,
+`left_shift`, `left_option`, `left_command`, and their `right_` equivalents.
+Named keys are `return`, `escape`, `delete`, and `space`; a USB HID usage from
+`0` through `101` may be supplied as an integer. At least one modifier or key is
+required for every action. Restart the Bridge after editing, and configure the
+dictation application to use the same voice chord.
 
 Metrics are disabled by default. Set `provider.name` to `codex`, `auto`, or a
 fully qualified Python module to opt in. The Codex Provider reads rate limits

@@ -80,12 +80,24 @@ Bridge 停止、报错或等待设备，状态栏应用会临时恢复上一次�
 {
   "device_name": "AI Passport",
   "audio_device": "BlackHole 2ch",
+  "shortcuts": {
+    "voice": { "modifiers": ["left_control", "left_command"], "key": null },
+    "send": { "modifiers": [], "key": "return" },
+    "clear": { "modifiers": ["left_command"], "key": "delete" }
+  },
   "provider": {
     "name": "none",
     "settings": { "refresh_seconds": 300 }
   }
 }
 ```
+
+Bridge 连接后会通过现有 HID Output Report 一次发送完整快捷键映射。固件校验 checksum
+后，仅在映射变化时写入 NVS；相同配置不会重复写 Flash。该机制不改变 HID 描述，也不
+要求重新配对。可用修饰键名称包括 `left_control`、`left_shift`、`left_option`、
+`left_command` 以及对应的 `right_` 名称；具名按键包括 `return`、`escape`、`delete`、
+`space`，也可以填写 `0` 至 `101` 的 USB HID usage 整数。每个动作至少需要一个修饰键
+或普通键。编辑后重新启动 Bridge，并把听写应用设置为相同的语音组合键。
 
 指标默认关闭。需要时可把 `provider.name` 改为 `codex`、`auto` 或完整 Python 模块名。
 Codex Provider 会通过本地 Codex CLI 读取额度，并从本机 `~/.codex` 会话记录读取 Token

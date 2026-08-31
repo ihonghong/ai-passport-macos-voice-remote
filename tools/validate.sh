@@ -32,6 +32,10 @@ run_static_checks() {
         tests/test_shortcut_protocol.c main/shortcut_protocol.c \
         -o "${test_dir}/test_shortcut_protocol"
     "${test_dir}/test_shortcut_protocol"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+        tests/test_shortcut_keymap.c main/shortcut_keymap.c \
+        -o "${test_dir}/test_shortcut_keymap"
+    "${test_dir}/test_shortcut_keymap"
     python3 tools/mac_shortcut_bridge.py --self-test
     python3 tests/test_verify_firmware.py
     rm -rf "${test_dir}"

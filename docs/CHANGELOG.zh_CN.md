@@ -6,6 +6,9 @@
 
 ## Unreleased
 
+- 新增语音、发送与清除动作的运行时快捷键映射。Mac 主机校验可读配置后，通过现有
+  HID Output Report 发送一条带 checksum 的完整记录；固件仅在映射变化时写入 NVS，
+  不改变 report descriptor，也不会因此要求重新进行蓝牙配对。
 - 公开仓库目标更名为 `ai-passport-macos-voice-remote`，并统一 Release 安装说明：
   已出厂配置的设备使用永久 Recovery 和官方小程序，开发使用分段烧录，从 `0x0`
   的 USB 裸写明确定义为会重置蓝牙配对的恢复操作。

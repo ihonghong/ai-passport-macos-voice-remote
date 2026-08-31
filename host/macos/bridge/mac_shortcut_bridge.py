@@ -42,6 +42,7 @@ AUDIO_FRAME_SAMPLES = 320
 BLE_HID_USAGE_PAGE = 0xFF00
 BLE_AUDIO_REPORT_ID = 2
 BLE_HOST_STATUS_REPORT_ID = 3
+BLE_SHORTCUT_KEYMAP_MARKER = ord("K")
 BLE_AUDIO_REPORT_BYTES = 176
 BLE_AUDIO_PACKET_HEADER_BYTES = 4
 BLE_AUDIO_PACKET_START = 1
@@ -51,6 +52,22 @@ METRIC_REMAINING_UNKNOWN = 0x7F
 METRIC_DAILY_UNIT = 10_000_000
 METRIC_DAILY_UNKNOWN = 0x7F
 HOST_STATUS_EPOCH = date(2020, 1, 1)
+HID_MODIFIERS = {
+    "left_control": 0x01,
+    "left_shift": 0x02,
+    "left_option": 0x04,
+    "left_command": 0x08,
+    "right_control": 0x10,
+    "right_shift": 0x20,
+    "right_option": 0x40,
+    "right_command": 0x80,
+}
+HID_KEYS = {
+    "return": 0x28,
+    "escape": 0x29,
+    "delete": 0x2A,
+    "space": 0x2C,
+}
 BRIDGE_STATUS_PATH = os.path.expanduser(
     "~/Library/Application Support/AI Passport Bridge/status.json"
 )
@@ -345,6 +362,59 @@ def hid_host_status_report(
     return header + packed.to_bytes(5, "little")
 
 
+def crc8_atm(data: bytes | bytearray) -> int:
+    """Return the CRC used by the firmware's atomic shortcut record."""
+    crc = 0
+    for value in data:
+        crc ^= value
+        for _ in range(8):
+            crc = ((crc << 1) ^ 0x07) & 0xFF if crc & 0x80 else (crc << 1) & 0xFF
+    return crc
+
+
+def shortcut_chord(config: object, action: str) -> tuple[int, int]:
+    """Translate one human-readable shortcut into a USB HID chord."""
+    if not isinstance(config, dict):
+        raise ValueError(f"shortcuts.{action} must be an object")
+    modifiers = config.get("modifiers", [])
+    if not isinstance(modifiers, list) or not all(
+        isinstance(value, str) for value in modifiers
+    ):
+        raise ValueError(f"shortcuts.{action}.modifiers must be a string list")
+    modifier_byte = 0
+    for name in modifiers:
+        try:
+            modifier_byte |= HID_MODIFIERS[name]
+        except KeyError as exc:
+            raise ValueError(
+                f"unsupported shortcuts.{action} modifier: {name}"
+            ) from exc
+
+    key_name = config.get("key")
+    if key_name is None:
+        key_code = 0
+    elif isinstance(key_name, str) and key_name in HID_KEYS:
+        key_code = HID_KEYS[key_name]
+    elif isinstance(key_name, int) and 0 <= key_name <= 0x65:
+        key_code = key_name
+    else:
+        raise ValueError(f"unsupported shortcuts.{action} key: {key_name}")
+    if modifier_byte == 0 and key_code == 0:
+        raise ValueError(f"shortcuts.{action} cannot be empty")
+    return modifier_byte, key_code
+
+
+def hid_shortcut_keymap_report(config: object) -> bytes:
+    """Encode all three actions in one Output Report 3 NVS transaction."""
+    if not isinstance(config, dict):
+        raise ValueError("shortcuts must be an object")
+    payload = bytearray((BLE_SHORTCUT_KEYMAP_MARKER,))
+    for action in ("voice", "send", "clear"):
+        payload.extend(shortcut_chord(config.get(action), action))
+    payload.append(crc8_atm(payload))
+    return bytes((BLE_HOST_STATUS_REPORT_ID,)) + bytes(payload)
+
+
 def parse_ble_audio_report(raw: bytes) -> tuple[int, int, bytes]:
     """Return packet type, sequence and payload from one vendor HID report."""
     if len(raw) >= BLE_AUDIO_REPORT_BYTES + 1 and raw[0] == BLE_AUDIO_REPORT_ID:
@@ -414,6 +484,7 @@ def run_ble_hid(
     product_name: str,
     provider_name: str,
     provider_settings: dict[str, object],
+    shortcuts: dict[str, object],
 ) -> None:
     """Receive microphone packets over the paired BLE HID connection."""
     audio_sink = MacAudioSink(audio_device) if audio_device else None
@@ -440,6 +511,11 @@ def run_ble_hid(
             device = None
             try:
                 device = open_hid(discover_hid_path(product_name))
+                # macOS updates the Output Report value but ESP-IDF does not
+                # always emit an output callback. Keep this record current for
+                # one 500 ms firmware polling period before writing status.
+                device.write(hid_shortcut_keymap_report(shortcuts))
+                time.sleep(0.6)
                 snapshot = metrics.snapshot
                 device.write(
                     hid_host_status_report(
@@ -739,6 +815,11 @@ def self_test() -> None:
     assert (unknown_status >> 25) & 1 == 0
     assert (unknown_status >> 26) & 0x7F == METRIC_REMAINING_UNKNOWN
     assert (unknown_status >> 33) & 0x7F == METRIC_DAILY_UNKNOWN
+    keymap = hid_shortcut_keymap_report(DEFAULT_CONFIG["shortcuts"])
+    assert len(keymap) == 9
+    assert keymap[0] == BLE_HOST_STATUS_REPORT_ID
+    assert keymap[1] == BLE_SHORTCUT_KEYMAP_MARKER
+    assert keymap[-1] == crc8_atm(keymap[1:-1])
     sample_day = datetime.now().astimezone().date()
     assert token_delta_for_local_day(
         {
@@ -827,6 +908,11 @@ def main() -> int:
         provider_settings = provider_config.get("settings", {})
         if not isinstance(provider_settings, dict):
             raise ValueError("provider.settings must be an object")
+        shortcuts = config.get("shortcuts")
+        if not isinstance(shortcuts, dict):
+            raise ValueError("shortcuts must be an object")
+        # Validate the complete map before touching the BLE device.
+        hid_shortcut_keymap_report(shortcuts)
         if args.print_effective_config:
             print(
                 json.dumps(
@@ -838,6 +924,7 @@ def main() -> int:
                             "name": provider_name,
                             "settings": provider_settings,
                         },
+                        "shortcuts": shortcuts,
                     },
                     indent=2,
                 )
@@ -851,6 +938,7 @@ def main() -> int:
                 product_name,
                 provider_name,
                 provider_settings,
+                shortcuts,
             )
         else:
             run(discover_port(args.port), args.inject, args.audio_wav, audio_device)

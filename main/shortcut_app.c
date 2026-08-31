@@ -459,8 +459,7 @@ static void handle_button(const shortcut_button_event_t *event)
         s_voice_held = true;
         s_listening_started_at = xTaskGetTickCount();
         s_ui_state = UI_LISTENING;
-        esp_err_t err = ble_keyboard_report(
-            BLE_KBD_MOD_LEFT_CTRL | BLE_KBD_MOD_LEFT_GUI, 0);
+        esp_err_t err = ble_keyboard_shortcut_press(SHORTCUT_ACTION_VOICE);
         if (err != ESP_OK) ESP_LOGW("shortcut_app", "Voice key down failed: %s",
                                     esp_err_to_name(err));
         // Put the shortcut-down report ahead of AUDIO_START/PCM. The audio
@@ -479,7 +478,7 @@ static void handle_button(const shortcut_button_event_t *event)
         s_ui_state = audio_transport_ready() ? UI_READY : UI_WAITING;
         protocol_write("VOICE,UP");
         ui_refresh();
-        esp_err_t err = ble_keyboard_report(0, 0);
+        esp_err_t err = ble_keyboard_shortcut_release(SHORTCUT_ACTION_VOICE);
         if (err != ESP_OK) ESP_LOGW("shortcut_app", "Voice key up failed: %s",
                                     esp_err_to_name(err));
         return;
@@ -489,7 +488,7 @@ static void handle_button(const shortcut_button_event_t *event)
     if (event->btn == BUTTON_SEND) {
         s_has_pending_dictation = false;
         s_ui_state = UI_RETURN_SENT;
-        esp_err_t err = ble_keyboard_tap(BLE_KBD_KEY_RETURN);
+        esp_err_t err = ble_keyboard_shortcut_tap(SHORTCUT_ACTION_SEND);
         if (err != ESP_OK) ESP_LOGW("shortcut_app", "Return failed: %s",
                                     esp_err_to_name(err));
         protocol_write("KEY,RETURN");
@@ -497,8 +496,7 @@ static void handle_button(const shortcut_button_event_t *event)
     } else if (event->btn == BUTTON_CLEAR && s_has_pending_dictation) {
         s_has_pending_dictation = false;
         s_ui_state = UI_CLEARED;
-        esp_err_t err = ble_keyboard_tap_chord(BLE_KBD_MOD_LEFT_GUI,
-                                               BLE_KBD_KEY_DELETE);
+        esp_err_t err = ble_keyboard_shortcut_tap(SHORTCUT_ACTION_CLEAR);
         if (err != ESP_OK) ESP_LOGW("shortcut_app", "Clear failed: %s",
                                     esp_err_to_name(err));
         protocol_write("KEY,CLEAR");
