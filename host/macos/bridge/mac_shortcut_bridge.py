@@ -410,7 +410,7 @@ def hid_button_keymap_report(config: object) -> bytes:
         raise ValueError("buttons must be an object")
     payload = bytearray((BLE_SHORTCUT_KEYMAP_MARKER,))
     # Preserve the firmware's v1 wire/storage order.
-    for button in ("down", "ok", "up"):
+    for button in ("down", "mid", "up"):
         payload.extend(button_chord(config.get(button), button))
     payload.append(crc8_atm(payload))
     return bytes((BLE_HOST_STATUS_REPORT_ID,)) + bytes(payload)

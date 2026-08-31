@@ -50,7 +50,10 @@ To build and install from a clone, run:
 
 If BlackHole is installed during this run, restart macOS and run the installer
 again. Then open **System Settings > Bluetooth**, connect **AI Passport**, and
-verify the installation:
+allow **AI Passport** under **Privacy & Security > Input Monitoring** when macOS
+asks. This one-time permission is required because the board exposes its
+wireless-audio channel inside the same composite HID device that macOS identifies
+as a keyboard. Restart the App after granting access, then verify the installation:
 
 ```bash
 ./host/macos/doctor.sh
@@ -67,8 +70,9 @@ flash the device, erase Bluetooth pairing, or uninstall BlackHole.
 
 ## Configure the physical buttons
 
-The configuration binds the three physical controls directly: `up`, `down`, and
-`ok`. It does not assign fixed voice, send, or delete semantics. The default
+The configuration binds the three physical controls directly: `up`, `mid`, and
+`down`. It does not assign fixed voice, send, or delete semantics. The default
+`mid` name corresponds to the board support package's historical `OK` label. The
 `down` binding holds **Left Control + Left Command**; this is an AI Passport
 project default, not a universal macOS, Dictation, or input-method shortcut.
 Every user must configure their preferred dictation application or input method
@@ -79,7 +83,7 @@ input method.
 After binding it, select **AI Passport input** from the menu-bar app, focus a
 text field, hold the physical Down button, speak, and release it. If the chosen
 application has its own microphone selector, choose `BlackHole 2ch` there as
-well. By default, OK emits Return and Up emits Command-Delete.
+well. By default, Mid emits Return and Up emits Command-Delete.
 
 **AI Passport input** keeps `BlackHole 2ch` selected while the bridge is
 connected to the device. If the bridge stops, fails, or waits for the device,
@@ -100,8 +104,8 @@ Choose **Open configuration file** from the menu-bar item, edit it, then choose
   "audio_device": "BlackHole 2ch",
   "buttons": {
     "up": { "modifiers": ["left_command"], "key": "delete" },
-    "down": { "modifiers": ["left_control", "left_command"], "key": null },
-    "ok": { "modifiers": [], "key": "return" }
+    "mid": { "modifiers": [], "key": "return" },
+    "down": { "modifiers": ["left_control", "left_command"], "key": null }
   },
   "provider": {
     "name": "none",
@@ -110,12 +114,12 @@ Choose **Open configuration file** from the menu-bar item, edit it, then choose
 }
 ```
 
-The Bridge sends the complete `up` / `down` / `ok` map through the existing HID
+The Bridge sends the complete `up` / `mid` / `down` map through the existing HID
 Output Report after connecting. Firmware validates its checksum and stores a
 changed map in NVS; unchanged maps do not write Flash. This does not change the
 HID descriptor or require re-pairing. The physical Down button still controls
 the microphone stream while held; its configured chord only determines which
-keyboard shortcut is held at the same time. Up and OK send their configured
+keyboard shortcut is held at the same time. Up and Mid send their configured
 chords as taps. Supported modifier names are `left_control`, `left_shift`,
 `left_option`, `left_command`, and their `right_` equivalents. Named keys are
 `return`, `escape`, `delete`, and `space`; a USB HID usage from `0` through `101`
@@ -125,7 +129,8 @@ application to use the same Down-button chord.
 
 Existing installations that still contain the earlier `shortcuts.voice`,
 `shortcuts.send`, and `shortcuts.clear` fields are migrated in memory to Down,
-OK, and Up respectively. New configurations should only use `buttons`.
+Mid, and Up respectively. The former physical key name `buttons.ok` is also
+migrated to `buttons.mid`. New configurations should only use `buttons`.
 
 Metrics are disabled by default. Set `provider.name` to `codex` or `auto` to opt
 in. The native Codex Provider reads rate limits

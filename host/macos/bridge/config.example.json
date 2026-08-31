@@ -6,13 +6,13 @@
       "modifiers": ["left_command"],
       "key": "delete"
     },
+    "mid": {
+      "modifiers": [],
+      "key": "return"
+    },
     "down": {
       "modifiers": ["left_control", "left_command"],
       "key": null
-    },
-    "ok": {
-      "modifiers": [],
-      "key": "return"
     }
   },
   "provider": {

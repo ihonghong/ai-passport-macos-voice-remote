@@ -15,11 +15,11 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "provider": {"name": "none", "settings": {}},
     "buttons": {
         "up": {"modifiers": ["left_command"], "key": "delete"},
+        "mid": {"modifiers": [], "key": "return"},
         "down": {
             "modifiers": ["left_control", "left_command"],
             "key": None,
         },
-        "ok": {"modifiers": [], "key": "return"},
     },
 }
 
@@ -52,13 +52,15 @@ def load_config(path: str | None) -> tuple[dict[str, Any], Path | None]:
             raise ValueError("legacy shortcuts must be a JSON object")
         buttons = {
             "up": legacy.get("clear"),
+            "mid": legacy.get("send"),
             "down": legacy.get("voice"),
-            "ok": legacy.get("send"),
         }
     if buttons is not None:
         if not isinstance(buttons, dict):
             raise ValueError("buttons must be a JSON object")
-        for button in ("up", "down", "ok"):
+        if "mid" not in buttons and "ok" in buttons:
+            buttons = {**buttons, "mid": buttons["ok"]}
+        for button in ("up", "mid", "down"):
             if button not in buttons or buttons[button] is None:
                 continue
             chord = buttons[button]

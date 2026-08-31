@@ -26,5 +26,7 @@
     <true/>
     <key>NSHumanReadableCopyright</key>
     <string>Open-source AI Passport contributors</string>
+    <key>NSInputMonitoringUsageDescription</key>
+    <string>AI Passport reads its paired keyboard and microphone HID reports.</string>
 </dict>
 </plist>

@@ -27,7 +27,7 @@ typedef enum {
     UI_WAITING = 0,
     UI_READY,
     UI_LISTENING,
-    UI_OK_PRESSED,
+    UI_MID_PRESSED,
     UI_UP_PRESSED,
 } shortcut_ui_state_t;
 
@@ -232,7 +232,7 @@ static void ui_refresh_locked(void)
         "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"
     };
     static const char *const states[] = {
-        "PAIR", "READY", "LISTENING", "OK", "UP"
+        "PAIR", "READY", "LISTENING", "MID", "UP"
     };
 
     lv_label_set_text(s_time_label, s_time_text);
@@ -479,9 +479,9 @@ static void handle_button(const shortcut_button_event_t *event)
     if (event->ev != BSP_BTN_CLICK) return;
 
     if (event->btn == BSP_BTN_OK) {
-        s_ui_state = UI_OK_PRESSED;
-        esp_err_t err = ble_keyboard_button_tap(SHORTCUT_BUTTON_OK);
-        if (err != ESP_OK) ESP_LOGW("shortcut_app", "OK binding failed: %s",
+        s_ui_state = UI_MID_PRESSED;
+        esp_err_t err = ble_keyboard_button_tap(SHORTCUT_BUTTON_MID);
+        if (err != ESP_OK) ESP_LOGW("shortcut_app", "MID binding failed: %s",
                                     esp_err_to_name(err));
         // Retain the legacy USB diagnostic event; BLE uses the physical map.
         protocol_write("KEY,RETURN");

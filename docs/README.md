@@ -15,7 +15,7 @@ The repository is organized around the following principles:
 ## Current shortcut application
 
 This fork currently boots directly into a wireless Mac voice-shortcut remote.
-Its physical Up, Down, and OK buttons are directly configurable; the defaults
+Its physical Up, Mid, and Down buttons are directly configurable; the defaults
 are Command-Delete, push-to-talk plus a keyboard chord, and Return. The built-in
 microphone is streamed over BLE HID to the repository's macOS bridge, while the
 display shows time, battery, connection state, optional model quota, daily token

@@ -26,6 +26,20 @@ if [[ -x "$EXECUTABLE" ]]; then
   print "INPUT $($EXECUTABLE --print-default-input 2>/dev/null || print unknown)"
 fi
 
+if [[ -f "$SUPPORT_DIR/status.json" ]]; then
+  state=$(plutil -extract state raw "$SUPPORT_DIR/status.json" 2>/dev/null || print unknown)
+  detail=$(plutil -extract detail raw "$SUPPORT_DIR/status.json" 2>/dev/null || print unknown)
+  case "$state" in
+    connected|recording) print "PASS  Bridge device connection ($state)" ;;
+    waiting) print "INFO  Bridge is waiting for the device" ;;
+    error)
+      print "FAIL  Bridge runtime: $detail"
+      FAILURES=$((FAILURES + 1))
+      ;;
+    *) print "INFO  Bridge runtime state: $state" ;;
+  esac
+fi
+
 if [[ -f "$SUPPORT_DIR/config.json" ]]; then
   if [[ -x "$EXECUTABLE" ]]; then
     check "Bridge configuration" "$EXECUTABLE" \

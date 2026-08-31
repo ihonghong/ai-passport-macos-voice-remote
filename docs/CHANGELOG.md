@@ -6,13 +6,16 @@
 
 ## Unreleased
 
+- Fixed native macOS discovery for the board's composite HID device: macOS
+  reports the keyboard collection as the primary usage and the wireless-audio
+  channel in its usage-pair list, so the App now checks both representations.
 - Moved the BLE HID audio Bridge, PCM conversion, Core Audio output, input
   switching, runtime shortcuts, and Codex metrics into one native Swift menu-bar
   App. Added universal Apple-silicon/Intel packaging, login-item control, and a
   release artifact; Python remains only as a migration and diagnostic reference,
   while BlackHole remains the required system audio driver.
 - Replaced semantic voice/send/clear shortcut settings with direct bindings for
-  the physical Up, Down, and OK buttons. Existing configurations migrate in
+  the physical Up, Mid, and Down buttons. Existing configurations migrate in
   memory, while the unchanged wire/storage order preserves NVS data and avoids
   Bluetooth re-pairing.
 - Renamed the public repository target to

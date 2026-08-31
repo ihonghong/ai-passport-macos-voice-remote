@@ -6,11 +6,13 @@
 
 ## Unreleased
 
+- 修复原生 macOS App 对开发板复合 HID 设备的发现：macOS 会把键盘集合登记为主用途，
+  把无线音频通道放在用途集合列表中，因此 App 现在会同时检查两种表示。
 - 将 BLE HID 音频 Bridge、PCM 转换、Core Audio 输出、输入切换、运行时快捷键与
   Codex 用量统一迁入一个原生 Swift 菜单栏 App；新增 Apple 芯片／Intel 通用打包、
   登录项控制与 Release 产物。Python 仅保留为迁移和诊断参考，BlackHole 仍是必要的
   系统音频驱动。
-- 将语音、发送、清除等语义配置改为直接绑定实体上键、下键与 OK 键。旧配置会在内存中
+- 将语音、发送、清除等语义配置改为直接绑定实体上键、中键与下键。旧配置会在内存中
   自动迁移，同时保持原有线协议与 NVS 顺序不变，因此无需重新蓝牙配对。
 - 公开仓库目标更名为 `ai-passport-macos-voice-remote`，并统一 Release 安装说明：
   已出厂配置的设备使用永久 Recovery 和官方小程序，开发使用分段烧录，从 `0x0`

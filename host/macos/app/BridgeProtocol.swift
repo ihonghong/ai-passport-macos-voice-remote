@@ -30,8 +30,32 @@ struct ShortcutChord: Decodable, Equatable {
 
 struct ButtonConfiguration: Decodable, Equatable {
     var up: ShortcutChord
+    var mid: ShortcutChord
     var down: ShortcutChord
-    var ok: ShortcutChord
+
+    private enum CodingKeys: String, CodingKey {
+        case up
+        case mid
+        case down
+        case ok
+    }
+
+    init(up: ShortcutChord, mid: ShortcutChord, down: ShortcutChord) {
+        self.up = up
+        self.mid = mid
+        self.down = down
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        up = try values.decode(ShortcutChord.self, forKey: .up)
+        if let configured = try values.decodeIfPresent(ShortcutChord.self, forKey: .mid) {
+            mid = configured
+        } else {
+            mid = try values.decode(ShortcutChord.self, forKey: .ok)
+        }
+        down = try values.decode(ShortcutChord.self, forKey: .down)
+    }
 }
 
 private struct LegacyShortcutConfiguration: Decodable {
@@ -104,7 +128,7 @@ struct AppConfiguration: Decodable, Equatable {
             LegacyShortcutConfiguration.self, forKey: .shortcuts
         ) {
             buttons = ButtonConfiguration(
-                up: legacy.clear, down: legacy.voice, ok: legacy.send
+                up: legacy.clear, mid: legacy.send, down: legacy.voice
             )
         } else {
             buttons = Self.defaults.buttons
@@ -116,10 +140,10 @@ struct AppConfiguration: Decodable, Equatable {
         audioDevice: "BlackHole 2ch",
         buttons: ButtonConfiguration(
             up: ShortcutChord(modifiers: ["left_command"], key: .name("delete")),
+            mid: ShortcutChord(modifiers: [], key: .name("return")),
             down: ShortcutChord(
                 modifiers: ["left_control", "left_command"], key: .usage(0)
-            ),
-            ok: ShortcutChord(modifiers: [], key: .name("return"))
+            )
         ),
         provider: ProviderConfiguration(name: "none", settings: [:])
     )
@@ -194,9 +218,9 @@ enum PassportProtocol {
 
     static func keymapPayload(_ buttons: ButtonConfiguration) throws -> Data {
         var bytes: [UInt8] = [Character("K").asciiValue!]
-        // Preserve the v1 wire order: DOWN, OK, UP.
+        // Preserve the v1 wire order: DOWN, MID, UP.
         for (name, chord) in [
-            ("down", buttons.down), ("ok", buttons.ok), ("up", buttons.up)
+            ("down", buttons.down), ("mid", buttons.mid), ("up", buttons.up)
         ] {
             let encoded = try encode(chord, button: name)
             bytes.append(contentsOf: [encoded.0, encoded.1])

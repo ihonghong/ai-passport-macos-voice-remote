@@ -18,7 +18,7 @@
 typedef enum {
     // Keep this wire/storage order compatible with existing keymap_v1 data.
     SHORTCUT_BUTTON_DOWN = 0,
-    SHORTCUT_BUTTON_OK,
+    SHORTCUT_BUTTON_MID,
     SHORTCUT_BUTTON_UP,
     SHORTCUT_BUTTON_COUNT,
 } shortcut_button_t;

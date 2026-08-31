@@ -15,22 +15,28 @@ private struct NativeBridgeTests {
                 "native keymap must match the Python/firmware contract")
 
         let physical = try JSONDecoder().decode(AppConfiguration.self, from: Data("""
-        {"buttons":{"up":{"modifiers":[],"key":"escape"},"down":{"modifiers":["left_shift"],"key":null},"ok":{"modifiers":[],"key":"space"}}}
+        {"buttons":{"up":{"modifiers":[],"key":"escape"},"mid":{"modifiers":[],"key":"space"},"down":{"modifiers":["left_shift"],"key":null}}}
         """.utf8))
         require(physical.buttons.up.key == .name("escape"),
                 "public configuration must bind the physical Up button")
         require(physical.buttons.down.modifiers == ["left_shift"],
                 "public configuration must bind the physical Down button")
-        require(physical.buttons.ok.key == .name("space"),
-                "public configuration must bind the physical OK button")
+        require(physical.buttons.mid.key == .name("space"),
+                "public configuration must bind the physical middle button")
+
+        let legacyPhysical = try JSONDecoder().decode(AppConfiguration.self, from: Data("""
+        {"buttons":{"up":{"modifiers":[],"key":"escape"},"down":{"modifiers":["left_shift"],"key":null},"ok":{"modifiers":[],"key":"return"}}}
+        """.utf8))
+        require(legacyPhysical.buttons.mid.key == .name("return"),
+                "buttons.ok must migrate to buttons.mid")
 
         let legacy = try JSONDecoder().decode(AppConfiguration.self, from: Data("""
         {"shortcuts":{"voice":{"modifiers":["left_control"],"key":null},"send":{"modifiers":[],"key":"return"},"clear":{"modifiers":[],"key":"escape"}}}
         """.utf8))
         require(legacy.buttons.down.modifiers == ["left_control"] &&
-                legacy.buttons.ok.key == .name("return") &&
+                legacy.buttons.mid.key == .name("return") &&
                 legacy.buttons.up.key == .name("escape"),
-                "legacy semantic configuration must migrate to Down, OK, and Up")
+                "legacy semantic configuration must migrate to Down, Mid, and Up")
 
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "Asia/Shanghai")!

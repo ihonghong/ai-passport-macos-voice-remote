@@ -25,7 +25,7 @@ shortcut_keymap_t shortcut_keymap_default(void)
                              SHORTCUT_HID_MOD_LEFT_GUI,
                 .key_code = 0,
             },
-            [SHORTCUT_BUTTON_OK] = {
+            [SHORTCUT_BUTTON_MID] = {
                 .modifiers = 0,
                 .key_code = SHORTCUT_HID_KEY_RETURN,
             },

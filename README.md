@@ -70,7 +70,7 @@ identity data, or reset Bluetooth pairing. If BlackHole is newly installed, rest
 macOS and rerun the installer. Then pair `AI Passport` in System Settings > Bluetooth.
 
 **Manual shortcut setup is required.** The host configuration binds the physical
-`up`, `down`, and `ok` buttons directly. By default, holding Down sends **Left
+`up`, `mid`, and `down` buttons directly. By default, holding Down sends **Left
 Control + Left Command** while it streams audio. This is an AI Passport project
 default, not a universal macOS, Dictation, or input-method default. Each user
 must configure their preferred voice-input application or input method to use

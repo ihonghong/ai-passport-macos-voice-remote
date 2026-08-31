@@ -45,8 +45,10 @@ final class NativeBridge {
         let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
         self.manager = manager
         let matching: [String: Any] = [
-            kIOHIDProductKey as String: configuration.deviceName,
-            kIOHIDPrimaryUsagePageKey as String: 0xFF00,
+            // IOHIDManager matches top-level usage pairs, while macOS keeps
+            // the composite device's primary usage as Keyboard.
+            kIOHIDDeviceUsagePageKey as String: 0xFF00,
+            kIOHIDDeviceUsageKey as String: 1,
         ]
         IOHIDManagerSetDeviceMatching(manager, matching as CFDictionary)
         IOHIDManagerRegisterDeviceMatchingCallback(manager, nativeDeviceMatched, opaqueSelf)
@@ -55,7 +57,14 @@ final class NativeBridge {
         let result = IOHIDManagerOpen(manager, IOOptionBits(kIOHIDOptionsTypeNone))
         guard result == kIOReturnSuccess else {
             cleanupManager()
-            publish(.error("Unable to open macOS HID manager (\(result))"))
+            if result == kIOReturnNotPermitted {
+                _ = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
+                publish(.error(
+                    "Grant AI Passport Input Monitoring permission, then restart the App"
+                ))
+            } else {
+                publish(.error("Unable to open macOS HID manager (\(result))"))
+            }
             return
         }
         isRunning = true
@@ -154,10 +163,17 @@ final class NativeBridge {
                 as? String,
               product.caseInsensitiveCompare(configuration.deviceName) == .orderedSame
         else { return false }
-        guard let number = IOHIDDeviceGetProperty(
+        if let primary = IOHIDDeviceGetProperty(
             device, kIOHIDPrimaryUsagePageKey as CFString
-        ) as? NSNumber else { return false }
-        return number.intValue == 0xFF00
+        ) as? NSNumber, primary.intValue == 0xFF00 {
+            return true
+        }
+        guard let usagePairs = IOHIDDeviceGetProperty(
+            device, kIOHIDDeviceUsagePairsKey as CFString
+        ) as? [[String: Any]] else { return false }
+        return usagePairs.contains { pair in
+            (pair[kIOHIDDeviceUsagePageKey as String] as? NSNumber)?.intValue == 0xFF00
+        }
     }
 
     private func startAudio(_ payload: Data) throws {
@@ -239,6 +255,28 @@ final class NativeBridge {
     }
 
     private func publish(_ state: NativeBridgeState) {
+        let name: String
+        let detail: String
+        switch state {
+        case .waiting(let value): (name, detail) = ("waiting", value)
+        case .connected(let value): (name, detail) = ("connected", value)
+        case .recording(let value): (name, detail) = ("recording", value)
+        case .error(let value): (name, detail) = ("error", value)
+        case .stopped: (name, detail) = ("stopped", "Bridge stopped")
+        }
+        NSLog("AI Passport bridge state: %@: %@", name, detail)
+        let statusURL = URL(fileURLWithPath: NSString(
+            string: "~/Library/Application Support/AI Passport Bridge/status.json"
+        ).expandingTildeInPath)
+        let status: [String: Any] = [
+            "state": name,
+            "detail": detail,
+            "pid": ProcessInfo.processInfo.processIdentifier,
+            "updated_at": Date().timeIntervalSince1970,
+        ]
+        if let data = try? JSONSerialization.data(withJSONObject: status) {
+            try? data.write(to: statusURL, options: .atomic)
+        }
         if Thread.isMainThread { onStateChange?(state) }
         else { DispatchQueue.main.async { [weak self] in self?.onStateChange?(state) } }
     }
