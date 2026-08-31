@@ -281,6 +281,23 @@ struct AudioPacket {
     let payload: Data
 }
 
+enum OutputReportRetry {
+    static let maximumAttempts = 3
+
+    static func perform(
+        operation: () -> Int32,
+        pause: () -> Void = { Thread.sleep(forTimeInterval: 0.025) }
+    ) -> Int32 {
+        var result: Int32 = 0
+        for attempt in 1...maximumAttempts {
+            result = operation()
+            if result == 0 { return result }
+            if attempt < maximumAttempts { pause() }
+        }
+        return result
+    }
+}
+
 enum BridgeError: LocalizedError {
     case invalidConfiguration(String)
     case invalidAudioPacket(String)

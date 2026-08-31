@@ -6,6 +6,9 @@
 
 ## Unreleased
 
+- Prevented a transient macOS BLE HID Output Report failure from latching the
+  Bridge into an offline error state: writes now receive bounded retries, while
+  a missed periodic status update keeps the connected audio/input path active.
 - Added first-launch BlackHole detection, a one-time dependency explanation,
   and a persistent official installation link while the device is missing.
 - Fixed native Codex daily-token totals staying at zero because session

@@ -6,6 +6,8 @@
 
 ## Unreleased
 
+- 修复 macOS BLE HID Output Report 偶发失败后 Bridge 被永久锁在离线错误状态的问题：
+  写入现在会进行有限重试，单次周期状态下发失败也不会中断已经连接的音频与输入路径。
 - 新增首次启动 BlackHole 检测、一次性依赖说明，以及缺少设备时持续显示的官方安装
   页面入口。
 - 修复原生 Codex 今日 Token 始终显示为 0 的问题；Provider 现在可以解析会话记录中

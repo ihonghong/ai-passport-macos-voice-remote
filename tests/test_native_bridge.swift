@@ -58,6 +58,25 @@ private struct NativeBridgeTests {
         }.joined() == "03a541448289bcaa06",
                 "native status output must include report ID 3")
 
+        var outputAttempts = 0
+        var outputPauses = 0
+        let recoveredOutput = OutputReportRetry.perform(operation: {
+            outputAttempts += 1
+            return outputAttempts == 3 ? 0 : -1
+        }, pause: {
+            outputPauses += 1
+        })
+        require(recoveredOutput == 0 && outputAttempts == 3 && outputPauses == 2,
+                "transient HID output failures must be retried without an extra pause")
+
+        outputAttempts = 0
+        let failedOutput = OutputReportRetry.perform(operation: {
+            outputAttempts += 1
+            return -1
+        }, pause: {})
+        require(failedOutput == -1 && outputAttempts == OutputReportRetry.maximumAttempts,
+                "persistent HID output failures must stop at the retry limit")
+
         let packet = try PassportProtocol.parseAudioReport(Data([
             2, 0x34, 0x12, 3, 1, 2, 3,
         ]))

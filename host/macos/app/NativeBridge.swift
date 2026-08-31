@@ -217,22 +217,28 @@ final class NativeBridge {
                 )
             )
         } catch {
-            publish(.error(error.localizedDescription))
+            // A connected BLE HID device can occasionally reject one Output
+            // Report while macOS is changing the link state. Input reports and
+            // the next periodic status update remain usable, so do not turn a
+            // transient host-to-device write into a disconnected bridge state.
+            NSLog("AI Passport host status write deferred: %@", error.localizedDescription)
         }
     }
 
     private func setOutputReport(device: IOHIDDevice, payload: Data) throws {
         let report = PassportProtocol.outputReportFrame(payload)
-        let result = report.withUnsafeBytes { raw -> IOReturn in
-            guard let base = raw.bindMemory(to: UInt8.self).baseAddress else {
-                return kIOReturnBadArgument
+        let result = OutputReportRetry.perform {
+            report.withUnsafeBytes { raw -> IOReturn in
+                guard let base = raw.bindMemory(to: UInt8.self).baseAddress else {
+                    return kIOReturnBadArgument
+                }
+                return IOHIDDeviceSetReport(
+                    device, kIOHIDReportTypeOutput,
+                    CFIndex(PassportProtocol.hostStatusReportID), base, report.count
+                )
             }
-            return IOHIDDeviceSetReport(
-                device, kIOHIDReportTypeOutput,
-                CFIndex(PassportProtocol.hostStatusReportID), base, report.count
-            )
         }
-        guard result == kIOReturnSuccess else {
+        guard result == Int32(kIOReturnSuccess) else {
             throw BridgeError.invalidAudioPacket("Unable to write HID report (\(result))")
         }
     }
